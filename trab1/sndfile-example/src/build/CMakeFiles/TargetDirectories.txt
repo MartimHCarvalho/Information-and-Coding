@@ -1,5 +1,0 @@
-/home/martim/Documents/sndfile-example/src/build/CMakeFiles/wav_cp.dir
-/home/martim/Documents/sndfile-example/src/build/CMakeFiles/wav_hist.dir
-/home/martim/Documents/sndfile-example/src/build/CMakeFiles/wav_dct.dir
-/home/martim/Documents/sndfile-example/src/build/CMakeFiles/edit_cache.dir
-/home/martim/Documents/sndfile-example/src/build/CMakeFiles/rebuild_cache.dir
