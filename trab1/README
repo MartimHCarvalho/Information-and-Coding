@@ -1,0 +1,2 @@
+To test exercise 2:
+    ../bin/wav_quant <input_file> <num_bits> <output_file>
