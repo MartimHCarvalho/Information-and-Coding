@@ -25,12 +25,23 @@ constexpr size_t FRAMES_BUFFER_SIZE = 65536; // Buffer for reading frames
 
 int main(int argc, char *argv[]) {
 
-	if(argc < 3) {
-		cerr << "Usage: " << argv[0] << " <input file> <channel>\n";
-		return 1;
-	}
+    if(argc < 3 || argc > 4) {
+        cerr << "Usage: " << argv[0] << " <input file> <channel> [k]\n";
+        return 1;
+    }
 
-	SndfileHandle sndFile { argv[argc-2] };
+    const char* inputPath = argv[1];
+    int channel = stoi(argv[2]);
+    unsigned binShift = 0;
+    if (argc == 4) {
+        int k = stoi(argv[3]);
+        if (k < 0) k = 0;
+        if (k > 15) k = 15;
+        binShift = static_cast<unsigned>(k);
+    }
+
+
+	SndfileHandle sndFile { inputPath };
 	if(sndFile.error()) {
 		cerr << "Error: invalid input file\n";
 		return 1;
@@ -47,20 +58,38 @@ int main(int argc, char *argv[]) {
 	}
 
 	int channel { stoi(argv[argc-1]) };
-	if(channel >= sndFile.channels()) {
-		cerr << "Error: invalid channel requested\n";
-		return 1;
-	}
+	WAVHist hist { sndFile, binShift };
+    
+    // Validate channel number
+    if(channel >= sndFile.channels()) {
+        if(sndFile.channels() == 2) {
+            if(channel == 2) {
+                // MID channel for stereo
+            } else if(channel == 3) {
+                // SIDE channel for stereo
+            } else {
+                cerr << "Error: invalid channel requested (0-" << sndFile.channels()-1 << " for individual channels";
+                if(sndFile.channels() == 2) {
+                    cerr << ", 2 for MID, 3 for SIDE";
+                }
+                cerr << ")\n";
+                return 1;
+            }
+        } else {
+            cerr << "Error: invalid channel requested\n";
+            return 1;
+        }
+    }
 
-	size_t nFrames;
-	vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
-	WAVHist hist { sndFile };
-	while((nFrames = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE))) {
-		samples.resize(nFrames * sndFile.channels());
-		hist.update(samples);
-	}
+    size_t nFrames;
+    std::vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
 
-	hist.dump(channel);
-	return 0;
+    while((nFrames = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE))) {
+        const size_t nSamples = nFrames * sndFile.channels();
+        hist.update(samples.data(), nSamples); 
+    }
+
+    hist.dump(channel);
+    return 0;
 }
 
