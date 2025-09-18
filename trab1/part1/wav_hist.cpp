@@ -57,7 +57,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	int channel { stoi(argv[argc-1]) };
 	WAVHist hist { sndFile, binShift };
     
     // Validate channel number
