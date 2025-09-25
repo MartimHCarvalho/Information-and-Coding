@@ -10,3 +10,9 @@ To test:
 
 To test exercise 2:
     ../bin/wav_quant <input_file> <num_bits> <output_file>
+
+To test exercise 3:
+	
+
+To test exercise 4:
+	../bin/wav_effects <input_file> <output_file> <effect_type> 
