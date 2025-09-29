@@ -4,14 +4,14 @@ To build:
 To test:
 	cd test
 	../bin/wav_cp sample.wav copy.wav // copies "sample.wav" into "copy.wav"
-	../bin/wav_hist sample.wav 0 // outputs the histogram of channel 0 (left)
-    ../bin/wav_hist sample.wav 0 // outputs the histogram of channel 1 (right)
 	../bin/wav_dct sample.wav out.wav // generates a DCT "compressed" version
 
 To test exercise 1:
-	../bin/wav_hist <input_file> <channel> // channel 0 is left, 1 is right
-										  // channel 2 is MID
-										  // channel 3 is SIDE
+	../bin/wav_hist <input_file> <channel> <k>
+											// channel 0 is left, 1 is right
+										    // channel 2 is MID
+										    // channel 3 is SIDE
+											// k is the number of histogram bins
 
 To test exercise 2:
     ../bin/wav_quant <input_file> <num_bits> <output_file>
