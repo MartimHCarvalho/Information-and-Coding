@@ -7,7 +7,7 @@ To test:
 	../bin/wav_dct sample.wav out.wav // generates a DCT "compressed" version
 
 To test exercise 1:
-	../bin/wav_hist <input_file> <channel> <k>
+	../bin/wav_hist <input_file> <output_file> <channel> <k>
 											// channel 0 is left, 1 is right
 										    // channel 2 is MID
 										    // channel 3 is SIDE
