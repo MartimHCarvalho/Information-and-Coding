@@ -17,13 +17,11 @@ cd test
 ```bash
 ../bin/wav_hist <input_file> <output_file> <channel> <k>
 ```
-<!--
- channel = 0 → Left
- channel = 1 → Right
- channel = 2 → Mid
- channel = 3 → Side-
+>channel = 0 → Left </br>
+ channel = 1 → Right </br>
+ channel = 2 → Mid </br>
+ channel = 3 → Side </br>
  k = número de bins do histograma
--->
 
 ## Exercise 2
 ---
