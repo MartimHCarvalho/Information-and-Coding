@@ -22,6 +22,6 @@ To test exercise 3:
 To test exercise 4:
 	../bin/wav_effects <input_file> <output_file> <effect_type> 
 
-To test exercise 5:
+To test exercise 6:
 	../bin/wav_quant_enc <input_file> <num_bits> <output_file>
 	../bin/wav_quant_dec <input_file> <output_file>
