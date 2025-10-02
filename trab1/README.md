@@ -9,7 +9,7 @@ cd ..
 ```bash
 cd test
 ../bin/wav_cp sample.wav copy.wav # copies "sample.wav" into "copy.wav"
- ../bin/wav_dct sample.wav out.wav # generates a DCT "compressed" version
+../bin/wav_dct sample.wav out.wav # generates a DCT "compressed" version
  ```
  
 ## Exercise 1 
