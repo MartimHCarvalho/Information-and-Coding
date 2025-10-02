@@ -13,7 +13,7 @@ cd test
  ```
  
 ## Exercise 1 
----
+
 ```bash
 ../bin/wav_hist <input_file> <output_file> <channel> <k>
 ```
@@ -24,22 +24,22 @@ cd test
  k = número de bins do histograma
 
 ## Exercise 2
----
+
 ```bash
 ../bin/wav_quant <input_file> <num_bits> <output_file>
 ```
 
 ## Exercise 3
 
----
+
 ## Exercise 4
----
+
 ```bash
 ../bin/wav_effects <input_file> <output_file> <effect_type>
 ```
 
 ## Exercise 6
----
+
 ```bash
 cd part2/bit_stream/src
 make
