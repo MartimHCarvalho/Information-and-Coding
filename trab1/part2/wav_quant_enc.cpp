@@ -2,7 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <sndfile.hh>
-#include "../part2/bit_stream/src/bit_stream.h"
+#include "../bit_stream/src/bit_stream.h"
 #include "../part1/wav_quant.h"
 
 constexpr size_t FRAMES_BUFFER_SIZE = 65536;
