@@ -1,8 +1,7 @@
 # To build de project
 ```bash
-cd src
+cd bit_stream/src
 make
-cd .. 
 ```
 
 ## Tests
@@ -41,9 +40,13 @@ cd test
 ## Exercise 6
 
 ```bash
-cd part2/bit_stream/src
-make
-
 ../bin/wav_quant_enc <input_file> <num_bits> <output_file>
 ../bin/wav_quant_dec <input_file> <output_file>
 ```
+## Exercise 7
+
+```bash
+../bin/wav_dct_enc <input_file> <quant_step> <output_file> <channels=1>
+../bin/wav_dct_dec <input_file> <output_file>
+```
+>channel must be 1 (mono audio only)
