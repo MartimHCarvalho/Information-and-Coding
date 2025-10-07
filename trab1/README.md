@@ -29,7 +29,9 @@ cd test
 ```
 
 ## Exercise 3
-
+```bash
+../bin/wav_quant <original_file> <modified_file>
+```
 
 ## Exercise 4
 
