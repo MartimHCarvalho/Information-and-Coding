@@ -23,9 +23,10 @@ int main(int argc, char* argv[]) {
     int goalBits = bstream.read_n_bits(5);
     int channels = bstream.read_n_bits(4);
     int sampleRate = bstream.read_n_bits(20);
+    uint32_t totalFrames = bstream.read_n_bits(32);
     int shift = 16 - goalBits;
 
-    SF_INFO sfinfo;
+    SF_INFO sfinfo{};
     sfinfo.channels = channels;
     sfinfo.samplerate = sampleRate;
     sfinfo.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
@@ -37,20 +38,16 @@ int main(int argc, char* argv[]) {
     }
 
     std::vector<short> samples;
-    while (true) {
-        if (ifs.eof()) break;
+    samples.reserve(FRAMES_BUFFER_SIZE * channels);
 
-        int packed;
-        try {
-            packed = bstream.read_n_bits(goalBits);
-        } catch (...) {
-            break; 
-        }
+    uint32_t samplesToRead = totalFrames * channels;
 
-        short restored = packed << shift;
+    for (uint32_t i = 0; i < samplesToRead; ++i) {
+        int packed = bstream.read_n_bits(goalBits);
+        short restored = static_cast<short>(packed << shift);
         samples.push_back(restored);
 
-        if (samples.size() >= FRAMES_BUFFER_SIZE) {
+        if (samples.size() >= FRAMES_BUFFER_SIZE * channels) {
             sfhOut.write(samples.data(), samples.size());
             samples.clear();
         }

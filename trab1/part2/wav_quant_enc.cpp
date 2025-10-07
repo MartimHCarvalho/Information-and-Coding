@@ -3,7 +3,6 @@
 #include <fstream>
 #include <sndfile.hh>
 #include "../bit_stream/src/bit_stream.h"
-#include "../part1/wav_quant.h"
 
 constexpr size_t FRAMES_BUFFER_SIZE = 65536;
 
@@ -38,17 +37,17 @@ int main(int argc, char* argv[]) {
 
     BitStream bstream(ofs, false);
 
-    // write header info
     bstream.write_n_bits(goalBits, 5);
     bstream.write_n_bits(sndFile.channels(), 4);
     bstream.write_n_bits(sndFile.samplerate(), 20);
+    bstream.write_n_bits(static_cast<uint32_t>(sndFile.frames()), 32);
 
     std::vector<short> samples(FRAMES_BUFFER_SIZE * sndFile.channels());
-    size_t framesRead;
-    while ((framesRead = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE))) {
-        samples.resize(framesRead * sndFile.channels());
-        for (auto sample : samples) {
-            int packed = sample >> (16 - goalBits);
+    sf_count_t framesRead;
+    while ((framesRead = sndFile.readf(samples.data(), FRAMES_BUFFER_SIZE)) > 0) {
+        size_t samplesCount = static_cast<size_t>(framesRead) * sndFile.channels();
+        for (size_t i = 0; i < samplesCount; ++i) {
+            int packed = samples[i] >> (16 - goalBits);
             bstream.write_n_bits(packed, goalBits);
         }
     }
