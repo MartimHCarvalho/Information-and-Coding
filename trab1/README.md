@@ -48,7 +48,6 @@ cd test
 ## Exercise 7
 
 ```bash
-../bin/wav_dct_enc <input_file> <quant_step> <output_file> <channels=1>
+../bin/wav_dct_enc <input_file> <quant_step> <output_file> 
 ../bin/wav_dct_dec <input_file> <output_file>
 ```
->channel must be 1 (mono audio only)
