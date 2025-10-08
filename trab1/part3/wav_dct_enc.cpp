@@ -28,19 +28,14 @@ void quantize(const std::vector<double>& input, std::vector<int>& output, int qs
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        std::cerr << "Usage: " << argv[0] << " input.wav quantStep output.bin channels=1\n";
+    if (argc != 4) {
+        std::cerr << "Usage: " << argv[0] << " input.wav quantStep output.bin\n";
         return 1;
     }
 
     const char* inputFile = argv[1];
     int qstep = std::stoi(argv[2]);
     const char* outputFile = argv[3];
-    int channels = std::stoi(argv[4]);
-    if (channels != 1) {
-        std::cerr << "This codec supports mono audio only.\n";
-        return 1;
-    }
 
     SndfileHandle sndFile(inputFile);
     if (sndFile.error()) {
@@ -60,10 +55,10 @@ int main(int argc, char* argv[]) {
 
     BitStream bstream(ofs, false);
 
-    // Header (block size, sample rate, channels, qstep, total samples)
+    // Header (block size, sample rate, channels=1, qstep, total samples)
     bstream.write_n_bits(BLOCK_SIZE, 16);
     bstream.write_n_bits(sndFile.samplerate(), 20);
-    bstream.write_n_bits(channels, 4);
+    bstream.write_n_bits(1, 4);  // Fixed to mono
     bstream.write_n_bits(qstep, 8);
     bstream.write_n_bits((uint32_t)sndFile.frames(), 32); // total number of samples in 32 bits
 
