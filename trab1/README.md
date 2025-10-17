@@ -20,7 +20,7 @@ cd test
  channel = 1 → Right </br>
  channel = 2 → Mid </br>
  channel = 3 → Side </br>
- k = número de bins do histograma
+ k = number of histogram bins
 
 ## Exercise 2
 
