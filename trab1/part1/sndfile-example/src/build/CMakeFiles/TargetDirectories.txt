@@ -1,0 +1,7 @@
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/wav_cp.dir
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/wav_hist.dir
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/wav_dct.dir
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/wav_quant.dir
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/wav_cmp.dir
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/edit_cache.dir
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/rebuild_cache.dir
