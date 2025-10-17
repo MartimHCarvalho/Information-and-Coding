@@ -38,6 +38,13 @@ cd test
 ```bash
 ../bin/wav_effects <input_file> <output_file> <effect_type>
 ```
+>effect_type = 0 → None </br>
+ effect_type = 1 → Single Echo </br>
+ effect_type = 2 → Multiple Echo </br>
+ effect_type = 3 → Amplitude Modulation </br>
+ effect_type = 4 → Time Varying Delay </br>
+ effect_type = 5 → Bass Boosted </br>
+
 
 ## Exercise 6
 

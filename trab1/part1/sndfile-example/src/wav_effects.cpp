@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 4) {
         cerr << "Usage: " << argv[0] << " <input.wav> <output.wav> <effectName>\n";
-        cerr << "Effects: none, singleEcho, multipleEcho, amplitudeModulation, timeVaryingDelay\n";
+        cerr << "Effects: none, singleEcho, multipleEcho, amplitudeModulation, timeVaryingDelay, bassBoosted\n";
         return 1;
     }
 

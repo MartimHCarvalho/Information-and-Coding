@@ -41,6 +41,9 @@ private:
         effects["timeVaryingDelay"] = [this](Samples& s, int sr, int ch) {
             this->applyTimeVaryingDelay(s, sr, ch, 0.005f, 0.25f);
         };
+        effects["bassBoosted"] = [this](Samples& s, int sr, int ch) {
+            this->applyBassBoosted(s, sr, ch, 200.0f, 1.8f);
+        };
     }
 
     void applySingleEcho(Samples& samples, int sampleRate, int channels, float delaySec, float decay)
@@ -166,6 +169,28 @@ private:
 
         samples.swap(out);
     }
+
+
+    void applyBassBoosted(Samples& samples, int sampleRate, int channels, float cutoffHz, float boostAmount)
+    {
+        if (channels <= 0 || samples.empty()) return;
+        const float RC = 1.0f / (2.0f * PI * cutoffHz);
+        const float dt = 1.0f / static_cast<float>(sampleRate);
+        const float alpha = dt / (RC + dt);
+        
+        // For each channel, process separately
+        for (int ch = 0; ch < channels; ++ch) {
+            float prevOut = 0.0f;
+            for (size_t i = ch; i < samples.size(); i += channels) {
+                float in = static_cast<float>(samples[i]);
+                prevOut = prevOut + alpha * (in - prevOut); // Low-pass filter
+                float boosted = in + boostAmount * (prevOut);
+                samples[i] = clamp16(static_cast<int>(std::lround(boosted)));
+            }
+        }
+    }
+
+
 
 public:
     WAVEffects()
