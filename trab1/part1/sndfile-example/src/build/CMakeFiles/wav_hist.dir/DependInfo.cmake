@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/wav_hist.cpp" "CMakeFiles/wav_hist.dir/wav_hist.cpp.o" "gcc" "CMakeFiles/wav_hist.dir/wav_hist.cpp.o.d"
+  "/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/wav_hist.cpp" "CMakeFiles/wav_hist.dir/wav_hist.cpp.o" "gcc" "CMakeFiles/wav_hist.dir/wav_hist.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

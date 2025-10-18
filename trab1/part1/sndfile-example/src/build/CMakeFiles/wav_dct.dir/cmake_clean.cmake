@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_dct"
-  "/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_dct.pdb"
+  "/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_dct"
+  "/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_dct.pdb"
   "CMakeFiles/wav_dct.dir/wav_dct.cpp.o"
   "CMakeFiles/wav_dct.dir/wav_dct.cpp.o.d"
 )

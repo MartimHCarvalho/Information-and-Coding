@@ -1,7 +1,0 @@
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/Common.dir
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/text2bin.dir
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/bin2text.dir
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/wav_quant_enc.dir
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/wav_quant_dec.dir
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/edit_cache.dir
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part2/bit_stream/src/build/CMakeFiles/rebuild_cache.dir

@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src
+CMAKE_SOURCE_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build
+CMAKE_BINARY_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build/CMakeFiles /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -315,20 +315,6 @@ help:
 	@echo "... wav_hist"
 	@echo "... wav_quant"
 	@echo "... wav_cmp.o"
-	@echo "... wav_cmp.i"
-	@echo "... wav_cmp.s"
-	@echo "... wav_cp.o"
-	@echo "... wav_cp.i"
-	@echo "... wav_cp.s"
-	@echo "... wav_dct.o"
-	@echo "... wav_dct.i"
-	@echo "... wav_dct.s"
-	@echo "... wav_hist.o"
-	@echo "... wav_hist.i"
-	@echo "... wav_hist.s"
-	@echo "... wav_quant.o"
-	@echo "... wav_quant.i"
-	@echo "... wav_quant.s"
 .PHONY : help
 
 

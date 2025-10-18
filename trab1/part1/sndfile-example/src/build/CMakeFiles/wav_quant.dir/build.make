@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src
+CMAKE_SOURCE_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build
+CMAKE_BINARY_DIR = /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/wav_quant.dir/depend.make
@@ -70,18 +70,18 @@ include CMakeFiles/wav_quant.dir/progress.make
 include CMakeFiles/wav_quant.dir/flags.make
 
 CMakeFiles/wav_quant.dir/wav_quant.cpp.o: CMakeFiles/wav_quant.dir/flags.make
-CMakeFiles/wav_quant.dir/wav_quant.cpp.o: /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/wav_quant.cpp
+CMakeFiles/wav_quant.dir/wav_quant.cpp.o: /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/wav_quant.cpp
 CMakeFiles/wav_quant.dir/wav_quant.cpp.o: CMakeFiles/wav_quant.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/wav_quant.dir/wav_quant.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/wav_quant.dir/wav_quant.cpp.o -MF CMakeFiles/wav_quant.dir/wav_quant.cpp.o.d -o CMakeFiles/wav_quant.dir/wav_quant.cpp.o -c /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/wav_quant.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/wav_quant.dir/wav_quant.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/wav_quant.dir/wav_quant.cpp.o -MF CMakeFiles/wav_quant.dir/wav_quant.cpp.o.d -o CMakeFiles/wav_quant.dir/wav_quant.cpp.o -c /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/wav_quant.cpp
 
 CMakeFiles/wav_quant.dir/wav_quant.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/wav_quant.dir/wav_quant.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/wav_quant.cpp > CMakeFiles/wav_quant.dir/wav_quant.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/wav_quant.cpp > CMakeFiles/wav_quant.dir/wav_quant.cpp.i
 
 CMakeFiles/wav_quant.dir/wav_quant.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/wav_quant.dir/wav_quant.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/wav_quant.cpp -o CMakeFiles/wav_quant.dir/wav_quant.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/wav_quant.cpp -o CMakeFiles/wav_quant.dir/wav_quant.cpp.s
 
 # Object files for target wav_quant
 wav_quant_OBJECTS = \
@@ -90,14 +90,14 @@ wav_quant_OBJECTS = \
 # External object files for target wav_quant
 wav_quant_EXTERNAL_OBJECTS =
 
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_quant: CMakeFiles/wav_quant.dir/wav_quant.cpp.o
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_quant: CMakeFiles/wav_quant.dir/build.make
-/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_quant: CMakeFiles/wav_quant.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_quant"
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_quant: CMakeFiles/wav_quant.dir/wav_quant.cpp.o
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_quant: CMakeFiles/wav_quant.dir/build.make
+/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_quant: CMakeFiles/wav_quant.dir/link.txt
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_quant"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/wav_quant.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
-CMakeFiles/wav_quant.dir/build: /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/bin/wav_quant
+CMakeFiles/wav_quant.dir/build: /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/bin/wav_quant
 .PHONY : CMakeFiles/wav_quant.dir/build
 
 CMakeFiles/wav_quant.dir/clean:
@@ -105,6 +105,6 @@ CMakeFiles/wav_quant.dir/clean:
 .PHONY : CMakeFiles/wav_quant.dir/clean
 
 CMakeFiles/wav_quant.dir/depend:
-	cd /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build /home/martim/MECT/1Ano/1Semestre/IC/Pratical/sndfile-example/src/build/CMakeFiles/wav_quant.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build /home/martim/MECT/1Ano/1Semestre/IC/Pratical/Information-and-Coding/trab1/part1/sndfile-example/src/build/CMakeFiles/wav_quant.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/wav_quant.dir/depend
 
