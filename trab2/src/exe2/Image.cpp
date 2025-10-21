@@ -10,19 +10,33 @@ bool Image::load(const std::string& filename) {
         return false;
     }
 
-    char format[3];
-    fscanf(file, "%2s", format);
+    char format[3] = {0};
+    if (fscanf(file, "%2s", format) != 1) {
+        std::cerr << "Failed to read image format\n";
+        fclose(file);
+        return false;
+    }
     if (strcmp(format, "P6") != 0) {
         std::cerr << "Unsupported format (only P6 PPM supported)\n";
         fclose(file);
         return false;
     }
 
-    fscanf(file, "%d %d %d%*c", &width, &height, &max_val);
+    if (fscanf(file, "%d %d %d%*c", &width, &height, &max_val) != 3) {
+        std::cerr << "Failed to read image dimensions or max_val\n";
+        fclose(file);
+        return false;
+    }
     channels = 3;
     data.resize(width * height * channels);
 
-    fread(data.data(), 1, data.size(), file);
+    size_t read_bytes = fread(data.data(), 1, data.size(), file);
+    if (read_bytes != data.size()) {
+        std::cerr << "Failed to read image data\n";
+        fclose(file);
+        return false;
+    }
+
     fclose(file);
     return true;
 }
@@ -35,7 +49,12 @@ bool Image::save(const std::string& filename) const {
     }
 
     fprintf(file, "P6\n%d %d\n%d\n", width, height, max_val);
-    fwrite(data.data(), 1, data.size(), file);
+    size_t written_bytes = fwrite(data.data(), 1, data.size(), file);
+    if (written_bytes != data.size()) {
+        std::cerr << "Failed to write image data\n";
+        fclose(file);
+        return false;
+    }
 
     fclose(file);
     return true;
