@@ -1,5 +1,9 @@
 # Part-I
 
+```bash
+make
+```
+
 ## Exercise 1
 
 ```bash
@@ -16,7 +20,7 @@ g++ -std=c++17 -o image_effects main.cpp Image.cpp Negative.cpp Mirror.cpp Rotat
 ### Test
 
 ```bash
-./image_effects <input_file> <output_file> <operation> [<value>]
+./bin/image_effects <input_file> <output_file> <operation> [<value>]
 ```
 
 - **input_file**: path to the original image file.  
@@ -28,11 +32,11 @@ g++ -std=c++17 -o image_effects main.cpp Image.cpp Negative.cpp Mirror.cpp Rotat
 
 | Operation     | Description                        | Example usage                               |
 |----------------|------------------------------------|---------------------------------------------|
-| `negative`     | Create the image negative          | `./image_effects <input_file> <output_file> negative` |
-| `mirror_h`     | Flip horizontally                  | `./image_effects <input_file> <output_file> mirror_h` |
-| `mirror_v`     | Flip vertically                    | `./image_effects <input_file> <output_file> mirror_v` |
-| `rotate`       | Rotate by multiples of 90°         | `./image_effects <input_file> <output_file> rotate 2` (180°) |
-| `intensity`    | Adjust brightness (+ or - value)   | `./image_effects <input_file> <output_file> intensity 40` |
+| `negative`     | Create the image negative          | `./bin/image_effects <input_file> <output_file> negative` |
+| `mirror_h`     | Flip horizontally                  | `./bin/image_effects <input_file> <output_file> mirror_h` |
+| `mirror_v`     | Flip vertically                    | `./bin/image_effects <input_file> <output_file> mirror_v` |
+| `rotate`       | Rotate by multiples of 90°         | `./bin/image_effects <input_file> <output_file> rotate 2` (180°) |
+| `intensity`    | Adjust brightness (+ or - value)   | `./bin/image_effects <input_file> <output_file> intensity 40` |
 
 ---
 # Part-II
