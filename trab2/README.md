@@ -1,5 +1,7 @@
 # Part-I
 
+Compile all exercises and build the project executables
+
 ```bash
 make
 ```
@@ -11,13 +13,6 @@ make
 ```
 
 ## Exercise 2
-### Compile
-
-```bash
-g++ -std=c++17 -o image_effects main.cpp Image.cpp Negative.cpp Mirror.cpp Rotate.cpp Intensity.cpp
-```
-
-### Test
 
 ```bash
 ./bin/image_effects <input_file> <output_file> <operation> [<value>]
