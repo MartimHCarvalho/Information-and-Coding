@@ -12,14 +12,14 @@ bool Image::load(const std::string& filename) {
 
     char format[3];
     fscanf(file, "%2s", format);
-    if (strcmp(format, "P6") != 0 && strcmp(format, "P5") != 0) {
-        std::cerr << "Unsupported format (use P6/P5)\n";
+    if (strcmp(format, "P6") != 0) {
+        std::cerr << "Unsupported format (only P6 PPM supported)\n";
         fclose(file);
         return false;
     }
 
     fscanf(file, "%d %d %d%*c", &width, &height, &max_val);
-    channels = (format[1] == '6') ? 3 : 1;
+    channels = 3;
     data.resize(width * height * channels);
 
     fread(data.data(), 1, data.size(), file);
@@ -34,12 +34,9 @@ bool Image::save(const std::string& filename) const {
         return false;
     }
 
-    if (channels == 3)
-        fprintf(file, "P6\n%d %d\n%d\n", width, height, max_val);
-    else
-        fprintf(file, "P5\n%d %d\n%d\n", width, height, max_val);
-
+    fprintf(file, "P6\n%d %d\n%d\n", width, height, max_val);
     fwrite(data.data(), 1, data.size(), file);
+
     fclose(file);
     return true;
 }
