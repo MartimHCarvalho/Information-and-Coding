@@ -2,7 +2,7 @@
 #define GOLOMB_HPP
 
 #include <string>
-#include "../includes/Part_II/bitstream.hpp"
+#include "bitstream.hpp"
 
 class Golomb {
 private:

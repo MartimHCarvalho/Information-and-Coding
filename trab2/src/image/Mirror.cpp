@@ -1,4 +1,4 @@
-#include "Image.h"
+#include "../includes/image/Image.hpp"
 #include <algorithm>
 
 void flipHorizontal(Image& img) {

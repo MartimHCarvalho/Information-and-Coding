@@ -40,7 +40,49 @@
 # debug information files
 *.dwo
 
+# Build directories
+build/
+bin/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.cmake
+*.cmake
+!CMakeLists.txt
+
+# Compiled files
+*.o
+*.a
+*.so
+*.d
+
+# Executables
+image_tool
+image_codec
+golomb_test
+*.out
+
 # IDE files
 .vscode/
-*.code-workspace
-.vs/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test outputs
+*.enc
+*.dec
+*.compressed
+*.bin
+*.pack
+test_output/
+
+# Documentation
+docs/*.pdf
+!docs/README.md
