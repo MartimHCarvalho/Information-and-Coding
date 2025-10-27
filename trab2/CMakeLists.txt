@@ -1,21 +1,21 @@
-cmake_minimum_required(VERSION 3.16)
-project(image_effects)
+cmake_minimum_required(VERSION 3.14)
+project(GolombCoding VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_BUILD_TYPE "Release")
-# set(CMAKE_BUILD_TYPE "Debug")
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++17")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address")
+# Set output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-set(BASE_DIR ${CMAKE_SOURCE_DIR})
-SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIR}/bin)
+# Include directories
+include_directories(${CMAKE_SOURCE_DIR}/includes)
 
-add_executable(image_effects
-    src/exe2/main.cpp
-    src/exe2/Image.cpp
-    src/exe2/Negative.cpp
-    src/exe2/Mirror.cpp
-    src/exe2/Rotate.cpp
-    src/exe2/Intensity.cpp
-)
+# Add subdirectories
+add_subdirectory(src/Part_I)
+add_subdirectory(src/Part_II)
+add_subdirectory(src/Part_III)
+add_subdirectory(src/Part_IV)
+add_subdirectory(src/Part_V)
