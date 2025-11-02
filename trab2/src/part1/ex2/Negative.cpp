@@ -1,4 +1,4 @@
-#include "../includes/image/Image.hpp"
+#include "../includes/Image.hpp"
 
 void invertColors(Image& img) {
     for (size_t i = 0; i < img.size(); ++i)

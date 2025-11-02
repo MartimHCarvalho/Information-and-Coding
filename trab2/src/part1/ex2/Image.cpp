@@ -1,4 +1,4 @@
-#include "../includes/image/Image.hpp"
+#include "../includes/Image.hpp"
 #include <iostream>
 #include <cstdio>
 #include <cstring>
