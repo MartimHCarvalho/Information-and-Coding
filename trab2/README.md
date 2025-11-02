@@ -1,73 +1,46 @@
-# Part-I
-
-Image compression and Golomb coding implementation.
-
+# Information and Coding - Assignment 2
 ## Building
 
-### Using Make (recommended)
 ```bash
-# Build everything
-make
-
-# Clean build artifacts
-make clean
-
-# Rebuild from scratch
-make rebuild
-
-# Show build configuration
-make info
-
-# Get help
-make help
-```
-
-### Using CMake (alternative)
-```bash
-# Create build directory
-mkdir -p build && cd build
-
-# Configure and build
-cmake ..
-make
-
-# Return to project root
-cd ..
+make           # Build all executables
+make clean     # Remove build artifacts
+make rebuild   # Clean and rebuild
 ```
 
 ## Directory Structure
 ```
 trab2/
-├── src/           # Source files
-├── includes/      # Header files
-├── images/        # Test images
-├── build/         # Build artifacts (generated)
-│   ├── obj/       # Object files
-│   └── deps/      # Dependency files
-└── bin/           # Executables (generated)
+├── src/
+│   ├── part1/
+│   │   ├── ex1/       # Exercise 1
+│   │   └── ex2/       # Image effects (ex2)
+│   └── part2/         # Golomb coding library
+├── includes/          # Header files
+├── images/            # Test images (PPM format)
+├── build/             # Build artifacts (generated)
+└── bin/               # Executables (generated)
 ```
 
-## Running
+## Part 1 - Image Effects
 
-### Image Codec
-```bash
-./bin/image_codec images/lena.ppm output.enc
-```
+The `image_effects` program supports various image transformations on PPM files.
 
-### Golomb Test
-```bash
-./bin/golomb_test
-```
-
-## Exercise 1
+### Usage
 
 ```bash
-./bin/image_codec encode <input.ppm> <output.enc>
-./bin/image_codec decode <input.enc> <output.ppm>
+./bin/image_effects <input_file> <output_file> <operation> [parameters]
 ```
 
-## Exercise 2
+### Supported Operations
 
-```bash
-./bin/golomb_test <m_parameter>
-```
+| Operation  | Description                    | Example                                                    |
+|------------|--------------------------------|------------------------------------------------------------|
+| negative   | Creates the image negative     | `./bin/image_effects input.ppm output.ppm negative`  |
+| mirror_h   | Horizontal mirroring           | `./bin/image_effects input.ppm output.ppm mirror_h`  |
+| mirror_v   | Vertical mirroring             | `./bin/image_effects input.ppm output.ppm mirror_v`  |
+| rotate     | Rotate by multiples of 90°     | `./bin/image_effects input.ppm output.ppm rotate 2`  |
+| intensity  | Adjust brightness (+ or - value) | `./bin/image_effects input.ppm output.ppm intensity 40` |
+
+## Part 2 - Golomb Coding
+
+Library for Golomb encoding/decoding (bitstream and golomb modules).
