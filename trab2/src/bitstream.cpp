@@ -1,4 +1,4 @@
-#include "../includes/bitstream.hpp"
+#include "bitstream.hpp"
 #include <stdexcept>
 #include <bitset>
 
