@@ -6,6 +6,60 @@ make           # Build all executables
 make clean     # Remove build artifacts
 make rebuild   # Clean and rebuild
 ```
+### Build Specific Components
+```bash
+make part1      # Build only image effects
+make codecs     # Build only Golomb codecs
+make image      # Build only image codec test
+make audio      # Build only audio codec test
+```
+
+### Image Effects - Exe2
+```bash
+make run-effects INPUT=<input.ppm> OUTPUT=<output.ppm> EFFECT=<effect>
+```
+
+**Available effects:** `negative`, `mirror`, `rotate`, `intensity`
+
+**Example:**
+```bash
+make run-effects INPUT=images/lena.ppm OUTPUT=output/negative.ppm EFFECT=negative
+```
+**Direct Order:**
+```bash
+./bin/image_effects <input.ppm> <output.ppm> <effect>
+```
+**Example:**
+```bash
+./bin/image_effects images/lena.ppm output/result.ppm mirror
+```
+
+## Audio Codec - Exe 4
+**Test with synthetic data:**
+```bash
+make test-audio
+```
+
+**Test with a specified audio:**
+```bash
+make run-audio FILE=path/to/audio.wav
+```
+
+**Alternative:**
+```bash
+make run FILE=myaudio.wav  
+```
+
+## Image Codec - Exe 5
+**Test with synthetic data:**
+```bash
+make test-image
+```
+
+**Test with your own image:**
+```bash
+make run-image FILE=path/to/image.pgm
+```
 
 ## Directory Structure
 ```

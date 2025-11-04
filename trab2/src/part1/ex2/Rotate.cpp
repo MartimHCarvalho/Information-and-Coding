@@ -1,4 +1,4 @@
-#include "../includes/Image.hpp"
+#include "../../../includes/part1/Image.hpp"
 
 Image rotateImage90(const Image& src, int times) {
     times = ((times % 4) + 4) % 4;  // avoid negatives

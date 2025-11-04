@@ -1,0 +1,511 @@
+# Image Processing and Golomb Coding Project
+
+This project contains implementations of image processing effects and Golomb coding algorithms for lossless compression of images and audio files.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Project Structure](#project-structure)
+- [Building the Project](#building-the-project)
+- [Running the Programs](#running-the-programs)
+  - [Image Effects (Part 1)](#image-effects-part-1)
+  - [Golomb Image Codec](#golomb-image-codec)
+  - [Golomb Audio Codec](#golomb-audio-codec)
+- [Testing](#testing)
+- [Benchmarking](#benchmarking)
+- [File Formats](#file-formats)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+
+---
+
+## Features
+
+### 🎨 Image Effects
+- **Negative**: Invert image colors
+- **Mirror**: Horizontal image mirroring
+- **Rotate**: 90° clockwise rotation
+- **Intensity**: Brightness adjustment
+
+### 📦 Golomb Coding
+- Lossless image compression (PGM format)
+- Lossless audio compression (WAV format)
+- Efficient entropy coding with configurable parameters
+- Compression ratio analysis and statistics
+
+---
+
+## Requirements
+
+### Mandatory
+- **C++ Compiler**: g++ with C++17 support
+- **Make**: GNU Make
+
+### Optional
+- **OpenCV 4**: Required only for the lossless codec (optional component)
+
+To check if OpenCV is installed:
+```bash
+pkg-config --modversion opencv4
+```
+
+---
+
+## Project Structure
+
+```
+.
+├── includes/                 # Header files
+│   ├── codec/               # Codec headers
+│   │   ├── image_codec.hpp
+│   │   └── audio_codec.hpp
+│   ├── bitstream.hpp
+│   └── golomb.hpp
+├── src/                     # Source files
+│   ├── part1/ex2/          # Image effects implementation
+│   │   ├── main.cpp
+│   │   ├── Image.cpp
+│   │   ├── Negative.cpp
+│   │   ├── Mirror.cpp
+│   │   ├── Rotate.cpp
+│   │   └── Intensity.cpp
+│   ├── codec/              # Codec implementations
+│   │   ├── image_codec.cpp
+│   │   ├── audio_codec.cpp
+│   │   └── tests/          # Test programs
+│   │       ├── test_image_codec.cpp
+│   │       └── test_audio_codec.cpp
+│   ├── bitstream.cpp
+│   └── golomb.cpp
+├── bin/                    # Compiled executables (generated)
+├── build/                  # Build artifacts (generated)
+├── output/                 # Test outputs (generated)
+├── images/                 # Sample images
+└── Makefile               # Build system
+```
+
+---
+
+## Building the Project
+
+### Build Everything
+```bash
+make
+```
+This automatically builds all available components.
+
+### Build Specific Components
+```bash
+make part1      # Build only image effects
+make codecs     # Build only Golomb codecs
+make image      # Build only image codec test
+make audio      # Build only audio codec test
+```
+
+### Build Variants
+```bash
+make debug      # Debug build (no optimization, debug symbols)
+make release    # Release build (maximum optimization)
+make rebuild    # Clean and rebuild from scratch
+```
+
+### Check Build Status
+```bash
+make check      # See what's been built
+make info       # Show build configuration
+```
+
+---
+
+## Running the Programs
+
+### Image Effects (Part 1)
+
+#### Using Makefile
+```bash
+make run-effects INPUT=<input.ppm> OUTPUT=<output.ppm> EFFECT=<effect>
+```
+
+**Available effects:** `negative`, `mirror`, `rotate`, `intensity`
+
+**Example:**
+```bash
+make run-effects INPUT=images/lena.ppm OUTPUT=output/negative.ppm EFFECT=negative
+```
+
+#### Direct Execution
+```bash
+./bin/image_effects <input.ppm> <output.ppm> <effect>
+```
+
+**Example:**
+```bash
+./bin/image_effects images/lena.ppm output/result.ppm mirror
+```
+
+---
+
+### Golomb Image Codec
+
+The image codec compresses and decompresses PGM (Portable Graymap) images using Golomb coding.
+
+#### Using Makefile
+
+**Test with synthetic data:**
+```bash
+make test-image
+```
+
+**Test with your own image:**
+```bash
+make run-image FILE=path/to/image.pgm
+```
+
+**Alternative syntax:**
+```bash
+make run FILE=myimage.pgm          # Auto-detects .pgm extension
+make run-image IMAGE=myimage.pgm   # Alternative parameter name
+```
+
+#### Direct Execution
+```bash
+./bin/test_image_codec [path/to/image.pgm]
+```
+
+If no file is provided, it generates and tests synthetic data.
+
+**Example:**
+```bash
+./bin/test_image_codec images/lena.pgm
+```
+
+#### What It Does
+1. Loads the PGM image
+2. Encodes it using Golomb coding
+3. Saves the compressed file (`.golomb` extension)
+4. Decodes the compressed file
+5. Saves the reconstructed image
+6. Displays compression statistics
+
+**Output files** (created in `output/` directory):
+- `*.golomb` - Compressed file
+- `*_decoded.pgm` - Reconstructed image
+
+---
+
+### Golomb Audio Codec
+
+The audio codec compresses and decompresses WAV audio files using Golomb coding.
+
+#### Using Makefile
+
+**Test with synthetic data:**
+```bash
+make test-audio
+```
+
+**Test with your own audio:**
+```bash
+make run-audio FILE=path/to/audio.wav
+```
+
+**Alternative:**
+```bash
+make run FILE=myaudio.wav  # Auto-detects .wav extension
+```
+
+#### Direct Execution
+```bash
+./bin/test_audio_codec [path/to/audio.wav]
+```
+
+**Example:**
+```bash
+./bin/test_audio_codec audio/sample.wav
+```
+
+#### What It Does
+1. Loads the WAV file
+2. Encodes it using Golomb coding
+3. Saves the compressed file (`.golomb` extension)
+4. Decodes the compressed file
+5. Saves the reconstructed audio
+6. Displays compression statistics and audio format info
+
+**Output files** (created in `output/` directory):
+- `*.golomb` - Compressed file
+- `*_decoded.wav` - Reconstructed audio
+
+---
+
+## Testing
+
+### Run All Tests
+```bash
+make test
+```
+This runs tests for all available components with synthetic data.
+
+### Run Specific Tests
+```bash
+make test-effects     # Test image effects
+make test-image       # Test image codec with synthetic data
+make test-audio       # Test audio codec with synthetic data
+```
+
+### Quick Test
+```bash
+make quick-test       # Fast test of all components
+```
+
+---
+
+## Benchmarking
+
+### Benchmark All Codecs
+```bash
+make benchmark
+```
+
+### Benchmark Specific Codecs
+```bash
+# With default synthetic data
+make benchmark-image
+make benchmark-audio
+
+# With your own files
+make benchmark-image FILE=large_image.pgm
+make benchmark-audio FILE=long_audio.wav
+```
+
+The benchmark shows execution time and memory usage for encoding and decoding.
+
+---
+
+## File Formats
+
+### Supported Formats
+
+| Component | Input Format | Output Format | Notes |
+|-----------|-------------|---------------|-------|
+| Image Effects | PPM (P3/P6) | PPM (P3/P6) | RGB color images |
+| Image Codec | PGM (P2/P5) | `.golomb` | 8-bit grayscale only |
+| Audio Codec | WAV (PCM) | `.golomb` | 16-bit PCM, mono/stereo |
+
+### Format Requirements
+
+#### PPM (Portable Pixmap)
+- Text (P3) or binary (P6) format
+- RGB color images
+- Used by image effects
+
+#### PGM (Portable Graymap)
+- Text (P2) or binary (P5) format
+- 8-bit grayscale (0-255)
+- Used by image codec
+
+#### WAV (Waveform Audio)
+- PCM format (uncompressed)
+- 16-bit samples
+- Mono or stereo
+- Common sample rates (8kHz - 48kHz)
+
+---
+
+## Examples
+
+### Example 1: Apply Multiple Effects
+```bash
+# Build the project
+make
+
+# Apply negative effect
+make run-effects INPUT=images/photo.ppm OUTPUT=output/step1.ppm EFFECT=negative
+
+# Mirror the result
+make run-effects INPUT=output/step1.ppm OUTPUT=output/step2.ppm EFFECT=mirror
+
+# Rotate the result
+make run-effects INPUT=output/step2.ppm OUTPUT=output/final.ppm EFFECT=rotate
+```
+
+### Example 2: Compress and Analyze Image
+```bash
+# Build codecs
+make codecs
+
+# Compress your image
+make run-image FILE=images/photo.pgm
+
+# Output will be in output/ directory:
+# - photo.golomb (compressed)
+# - photo_decoded.pgm (reconstructed)
+```
+
+### Example 3: Batch Process Images
+```bash
+# Compress all PGM images in a directory
+for f in images/*.pgm; do
+    make run-image FILE="$f"
+done
+```
+
+### Example 4: Batch Process Audio Files
+```bash
+# Compress all WAV files
+for f in audio/*.wav; do
+    make run-audio FILE="$f"
+done
+```
+
+### Example 5: Compare Original and Decoded
+```bash
+# Compress and decompress
+./bin/test_image_codec images/original.pgm
+
+# Files are in output/:
+# output/original.golomb - compressed
+# output/original_decoded.pgm - reconstructed
+
+# Compare files (should be identical for lossless)
+diff images/original.pgm output/original_decoded.pgm
+```
+
+### Example 6: Development Workflow
+```bash
+# Debug build for development
+make debug
+
+# Make changes to code...
+
+# Test changes
+make test
+
+# Once ready, build optimized version
+make release
+
+# Benchmark performance
+make benchmark-image FILE=test.pgm
+```
+
+---
+
+## Cleaning
+
+### Clean Build Artifacts
+```bash
+make clean          # Remove compiled files
+make clean-output   # Remove test outputs only
+make distclean      # Remove everything (full clean)
+```
+
+---
+
+## Troubleshooting
+
+### Build Issues
+
+**Problem**: `g++: command not found`
+```bash
+# Install g++ on Ubuntu/Debian:
+sudo apt-get install build-essential
+
+# On macOS:
+xcode-select --install
+```
+
+**Problem**: OpenCV not found (optional)
+```bash
+# This is OK - OpenCV is optional
+# Only needed for lossless_codec component
+# Other components will build fine without it
+
+# To install OpenCV on Ubuntu/Debian:
+sudo apt-get install libopencv-dev
+
+# On macOS:
+brew install opencv
+```
+
+### Runtime Issues
+
+**Problem**: "No such file or directory"
+- Ensure the input file path is correct
+- Use absolute paths or paths relative to current directory
+- The Makefile changes to `output/` directory when running tests
+
+**Problem**: "Invalid file format"
+- Check that image files are in correct format (PGM for codec, PPM for effects)
+- Ensure images are 8-bit grayscale for image codec
+- Verify audio files are PCM WAV format for audio codec
+
+**Problem**: Output files not found
+- Check the `output/` directory - all test outputs are saved there
+- When using direct execution, outputs are saved in current directory
+
+### Getting Help
+
+```bash
+make help           # Show all available commands
+make examples       # Show usage examples
+make info           # Show build configuration
+make check          # Check what's been built
+```
+
+---
+
+## Performance Tips
+
+1. **Use release build** for production: `make release`
+2. **Larger images/audio** = better compression ratios
+3. **Golomb parameter m** affects compression (auto-optimized in current implementation)
+4. Use **benchmark** targets to measure performance on your specific files
+
+---
+
+## Additional Resources
+
+### Makefile Targets
+
+Run `make help` to see all available targets:
+- Building: `make`, `make part1`, `make codecs`, etc.
+- Testing: `make test`, `make test-image`, `make test-audio`
+- Running: `make run`, `make run-image`, `make run-audio`, `make run-effects`
+- Benchmarking: `make benchmark`, `make benchmark-image`, `make benchmark-audio`
+- Cleaning: `make clean`, `make clean-output`, `make distclean`
+- Information: `make check`, `make info`, `make show-structure`, `make help`
+
+### Quick Reference
+
+```bash
+# Build and test everything
+make && make test
+
+# Test with your files
+make run FILE=myfile.pgm                              # Auto-detect type
+make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=negative
+
+# Direct execution
+./bin/image_effects input.ppm output.ppm negative
+./bin/test_image_codec image.pgm
+./bin/test_audio_codec audio.wav
+
+# Get help
+make help
+make examples
+```
+
+---
+
+## License
+
+[Add your license information here]
+
+## Authors
+
+[Add author information here]
+
+## Acknowledgments
+
+[Add any acknowledgments here]

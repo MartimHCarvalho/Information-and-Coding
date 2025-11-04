@@ -1,4 +1,4 @@
-#include "../includes/Image.hpp"
+#include "../../../includes/part1/Image.hpp"
 
 void adjustIntensity(Image& img, int value) {
     for (size_t i = 0; i < img.size(); ++i) {

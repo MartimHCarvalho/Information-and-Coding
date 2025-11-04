@@ -1,4 +1,4 @@
-#include "../includes/Image.hpp"
+#include "../../../includes/part1/Image.hpp"
 #include <algorithm>
 
 void flipHorizontal(Image& img) {

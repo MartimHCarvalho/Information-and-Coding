@@ -1,4 +1,4 @@
-#include "image_codec.hpp"
+#include "../../includes/codec/image_codec.hpp"
 #include <fstream>
 #include <cmath>
 #include <algorithm>

@@ -1,8 +1,8 @@
 #ifndef IMAGE_CODEC_HPP
 #define IMAGE_CODEC_HPP
 
-#include "../includes/golomb.hpp"
-#include "../includes/bitstream.hpp"
+#include "../golomb.hpp"
+#include "../bitstream.hpp"
 #include <vector>
 #include <string>
 #include <cstdint>
