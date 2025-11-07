@@ -22,7 +22,11 @@ INCLUDES := -I$(INCLUDE_DIR)
 
 # ==================== Source Files ====================
 
-# Part 1 - Image Effects
+# Part 1 - Exercise 1 (Channel Extraction)
+PART1_EX1_SRCS := \
+    $(SRC_DIR)/part1/ex1/exe1.cpp
+
+# Part 1 - Exercise 2 (Image Effects)
 PART1_EX2_SRCS := \
     $(SRC_DIR)/part1/ex2/main.cpp \
     $(SRC_DIR)/part1/ex2/Image.cpp \
@@ -52,7 +56,10 @@ TEST_CODEC_SRC := $(TEST_DIR)/test_codec.cpp
 
 # ==================== Object Files ====================
 
-# Part 1 objects
+# Part 1 - Exercise 1 objects
+PART1_EX1_OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(PART1_EX1_SRCS))
+
+# Part 1 - Exercise 2 objects
 PART1_EX2_OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(PART1_EX2_SRCS))
 PART1_MAIN := $(OBJ_DIR)/part1/ex2/main.o
 PART1_LIBS := $(filter-out $(PART1_MAIN),$(PART1_EX2_OBJS))
@@ -73,12 +80,13 @@ AUDIO_TEST_OBJECTS := $(OBJ_DIR)/bitstream.o $(OBJ_DIR)/golomb.o $(OBJ_DIR)/code
 CODEC_TEST_OBJECTS := $(OBJ_DIR)/bitstream.o $(OBJ_DIR)/golomb.o $(OBJ_DIR)/codec/image_codec.o
 
 # All objects
-ALL_OBJECTS := $(PART1_EX2_OBJS) $(GOLOMB_BASE_OBJS) $(GOLOMB_CODEC_OBJS) $(LOSSLESS_CODEC_OBJS)
+ALL_OBJECTS := $(PART1_EX1_OBJS) $(PART1_EX2_OBJS) $(GOLOMB_BASE_OBJS) $(GOLOMB_CODEC_OBJS) $(LOSSLESS_CODEC_OBJS)
 DEPS := $(patsubst $(OBJ_DIR)/%.o,$(DEP_DIR)/%.d,$(ALL_OBJECTS))
 
 # ==================== Executables ====================
 
-# Part 1 executable
+# Part 1 executables
+CHANNEL_EXTRACT := $(BIN_DIR)/exe1
 IMAGE_EFFECTS := $(BIN_DIR)/image_effects
 
 # Golomb codec test executables
@@ -91,6 +99,13 @@ LOSSLESS_CODEC := $(BIN_DIR)/lossless_codec
 
 # Determine which executables to build
 EXECUTABLES := $(IMAGE_EFFECTS)
+
+# Add exe1 if OpenCV is available and source exists
+ifneq ($(OPENCV_FLAGS),)
+    ifneq ($(wildcard $(SRC_DIR)/part1/ex1/exe1.cpp),)
+        EXECUTABLES += $(CHANNEL_EXTRACT)
+    endif
+endif
 
 # Add Golomb test executables if test files exist
 ifneq ($(wildcard $(TEST_IMAGE_SRC)),)
@@ -138,17 +153,26 @@ all: directories $(EXECUTABLES)
 directories:
 	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(OUTPUT_DIR)
+	@mkdir -p $(OBJ_DIR)/part1/ex1
 	@mkdir -p $(OBJ_DIR)/part1/ex2
 	@mkdir -p $(OBJ_DIR)/codec
 	@mkdir -p $(OBJ_DIR)/tests
+	@mkdir -p $(DEP_DIR)/part1/ex1
 	@mkdir -p $(DEP_DIR)/part1/ex2
 	@mkdir -p $(DEP_DIR)/codec
 	@mkdir -p $(DEP_DIR)/tests
 
 # ==================== Compilation Rules ====================
 
-# Compilation rule for part1 files (no OpenCV)
-$(OBJ_DIR)/part1/%.o: $(SRC_DIR)/part1/%.cpp
+# Compilation rule for part1/ex1 files (WITH OpenCV)
+$(OBJ_DIR)/part1/ex1/%.o: $(SRC_DIR)/part1/ex1/%.cpp
+	@echo "$(BLUE)Compiling $< (with OpenCV)...$(NC)"
+	@mkdir -p $(dir $@)
+	@mkdir -p $(dir $(patsubst $(OBJ_DIR)/%,$(DEP_DIR)/%,$@))
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) $(OPENCV_FLAGS) -MMD -MP -MF $(patsubst $(OBJ_DIR)/%.o,$(DEP_DIR)/%.d,$@) -c $< -o $@
+
+# Compilation rule for part1/ex2 files (no OpenCV)
+$(OBJ_DIR)/part1/ex2/%.o: $(SRC_DIR)/part1/ex2/%.cpp
 	@echo "$(BLUE)Compiling $<...$(NC)"
 	@mkdir -p $(dir $@)
 	@mkdir -p $(dir $(patsubst $(OBJ_DIR)/%,$(DEP_DIR)/%,$@))
@@ -177,7 +201,14 @@ $(OBJ_DIR)/tests/%.o: $(TEST_DIR)/%.cpp
 
 # ==================== Linking Rules ====================
 
-# Link image_effects executable (Part 1 - no OpenCV needed)
+# Link exe1 executable (Part 1 - Exercise 1, needs OpenCV)
+$(CHANNEL_EXTRACT): $(PART1_EX1_OBJS)
+	@echo "$(BLUE)Linking $(notdir $@) (with OpenCV)...$(NC)"
+	@mkdir -p $(dir $@)
+	@$(CXX) $(CXXFLAGS) $^ $(OPENCV_FLAGS) -o $@
+	@echo "$(GREEN)✓ Built $(notdir $@)$(NC)"
+
+# Link image_effects executable (Part 1 - Exercise 2, no OpenCV needed)
 $(IMAGE_EFFECTS): $(PART1_MAIN) $(PART1_LIBS)
 	@echo "$(BLUE)Linking $(notdir $@)...$(NC)"
 	@mkdir -p $(dir $@)
@@ -216,6 +247,29 @@ endif
 -include $(DEPS)
 
 # ==================== Run Targets - Part 1 ====================
+
+# Run channel extraction
+run-exe1: $(CHANNEL_EXTRACT)
+	@if [ -n "$(INPUT)" ] && [ -n "$(OUTPUT)" ] && [ -n "$(CHANNEL)" ]; then \
+		echo "$(YELLOW)Running channel extraction: channel $(CHANNEL)$(NC)"; \
+		$(CHANNEL_EXTRACT) $(INPUT) $(OUTPUT) $(CHANNEL); \
+	else \
+		echo "$(YELLOW)Usage: make run-exe1 INPUT=input.ppm OUTPUT=output.ppm CHANNEL=0$(NC)"; \
+		echo "Channel: 0 = Blue, 1 = Green, 2 = Red"; \
+	fi
+
+# Test channel extraction
+test-exe1: $(CHANNEL_EXTRACT)
+	@echo "$(YELLOW)Testing channel extraction...$(NC)"
+	@if [ -f images/anemone.ppm ]; then \
+		mkdir -p $(OUTPUT_DIR); \
+		$(CHANNEL_EXTRACT) images/anemone.ppm $(OUTPUT_DIR)/blue_channel.ppm 0 || true; \
+		$(CHANNEL_EXTRACT) images/anemone.ppm $(OUTPUT_DIR)/green_channel.ppm 1 || true; \
+		$(CHANNEL_EXTRACT) images/anemone.ppm $(OUTPUT_DIR)/red_channel.ppm 2 || true; \
+		echo "$(GREEN)✓ Test outputs in $(OUTPUT_DIR)/$(NC)"; \
+	else \
+		echo "$(RED)✗ Test image 'images/anemone.ppm' not found$(NC)"; \
+	fi
 
 # Run image effects
 run-effects: $(IMAGE_EFFECTS)
@@ -301,18 +355,20 @@ run:
 				echo "$(YELLOW)Unknown file type. Specify using:$(NC)"; \
 				echo "  make run-image FILE=file.pgm"; \
 				echo "  make run-audio FILE=file.wav"; \
-				echo "  make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=negative"; ;; \
+				echo "  make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=negative"; \
+				echo "  make run-exe1 INPUT=in.ppm OUTPUT=out.ppm CHANNEL=0"; ;; \
 		esac \
 	else \
 		echo "$(YELLOW)Usage Examples:$(NC)"; \
 		echo "  $(CYAN)make run FILE=path/to/file.pgm$(NC)"; \
 		echo "  $(CYAN)make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=negative$(NC)"; \
+		echo "  $(CYAN)make run-exe1 INPUT=in.ppm OUTPUT=out.ppm CHANNEL=0$(NC)"; \
 	fi
 
 # ==================== Testing Targets ====================
 
 # Run all tests
-test: test-available test-effects
+test: test-available test-exe1 test-effects
 	@echo ""
 	@echo "$(GREEN)╔══════════════════════════════════════════════════════════╗$(NC)"
 	@echo "$(GREEN)║  All Tests Completed Successfully!                      ║$(NC)"
@@ -391,9 +447,11 @@ benchmark:
 # ==================== Build Variants ====================
 
 # Build only Part 1
-part1: directories $(IMAGE_EFFECTS)
-	@echo "$(GREEN)✓ Part 1 (Image Effects) built$(NC)"
-	@echo "$(CYAN)Run: $(IMAGE_EFFECTS) input.ppm output.ppm [effect]$(NC)"
+part1: directories $(CHANNEL_EXTRACT) $(IMAGE_EFFECTS)
+	@echo "$(GREEN)✓ Part 1 built$(NC)"
+	@echo "$(CYAN)Available:$(NC)"
+	@if [ -f $(CHANNEL_EXTRACT) ]; then echo "  - $(CHANNEL_EXTRACT)"; fi
+	@echo "  - $(IMAGE_EFFECTS)"
 
 # Build only Golomb codecs
 codecs: directories
@@ -465,7 +523,12 @@ check:
 	@echo "$(BLUE)║  Build Status                                            ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Part 1 - Image Effects:$(NC)"
+	@echo "$(YELLOW)Part 1 - Image Processing:$(NC)"
+	@if [ -f $(CHANNEL_EXTRACT) ]; then \
+		echo "  $(GREEN)✓ $(CHANNEL_EXTRACT)$(NC)"; \
+	else \
+		echo "  $(RED)✗ Channel extraction not built$(NC)"; \
+	fi
 	@if [ -f $(IMAGE_EFFECTS) ]; then \
 		echo "  $(GREEN)✓ $(IMAGE_EFFECTS)$(NC)"; \
 	else \
@@ -505,14 +568,17 @@ show-structure:
 	@echo "$(BLUE)║  Project Structure                                       ║$(NC)"
 	@echo "$(BLUE)╚══════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Part 1 Sources:$(NC)"
-	@for src in $(PART1_EX2_SRCS); do echo "  $$src"; done
+	@echo "$(YELLOW)Part 1 - Exercise 1 Sources:$(NC)"
+	@for src in $(PART1_EX1_SRCS); do echo "  $src"; done
+	@echo ""
+	@echo "$(YELLOW)Part 1 - Exercise 2 Sources:$(NC)"
+	@for src in $(PART1_EX2_SRCS); do echo "  $src"; done
 	@echo ""
 	@echo "$(YELLOW)Golomb Base Sources:$(NC)"
-	@for src in $(GOLOMB_BASE_SRCS); do echo "  $$src"; done
+	@for src in $(GOLOMB_BASE_SRCS); do echo "  $src"; done
 	@echo ""
 	@echo "$(YELLOW)Golomb Codec Sources:$(NC)"
-	@for src in $(GOLOMB_CODEC_SRCS); do echo "  $$src"; done
+	@for src in $(GOLOMB_CODEC_SRCS); do echo "  $src"; done
 	@echo ""
 	@echo "$(YELLOW)Test Files:$(NC)"
 	@if [ -f $(TEST_IMAGE_SRC) ]; then echo "  $(TEST_IMAGE_SRC)"; fi
@@ -520,7 +586,7 @@ show-structure:
 	@if [ -f $(TEST_CODEC_SRC) ]; then echo "  $(TEST_CODEC_SRC)"; fi
 	@echo ""
 	@echo "$(YELLOW)Executables:$(NC)"
-	@for exec in $(EXECUTABLES); do echo "  $$exec"; done
+	@for exec in $(EXECUTABLES); do echo "  $exec"; done
 
 # List output files
 list-output:
@@ -539,7 +605,7 @@ info:
 	@echo "  $(YELLOW)OpenCV:$(NC)     $(if $(OPENCV_FLAGS),$(GREEN)Found$(NC),$(YELLOW)Not Found$(NC))"
 	@echo ""
 	@echo "  $(YELLOW)Executables to build:$(NC)"
-	@for exec in $(EXECUTABLES); do echo "    - $$exec"; done
+	@for exec in $(EXECUTABLES); do echo "    - $exec"; done
 
 # ==================== Help ====================
 
@@ -550,9 +616,54 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Building:$(NC)"
 	@echo "  $(GREEN)make$(NC) / $(GREEN)make all$(NC)     - Build all available components"
-	@echo "  $(GREEN)make part1$(NC)           - Build only image effects"
+	@echo "  $(GREEN)make part1$(NC)           - Build only Part 1 (ex1 and ex2)"
 	@echo "  $(GREEN)make codecs$(NC)          - Build only Golomb codecs"
 	@echo "  $(GREEN)make image$(NC)           - Build only image codec test"
 	@echo "  $(GREEN)make audio$(NC)           - Build only audio codec test"
 	@echo "  $(GREEN)make debug$(NC)           - Debug build (O0, -g)"
-	@echo "  $()
+	@echo "  $(GREEN)make release$(NC)         - Release build (O3, optimized)"
+	@echo ""
+	@echo "$(YELLOW)Running Part 1:$(NC)"
+	@echo "  $(GREEN)make run-exe1$(NC) INPUT=in.ppm OUTPUT=out.ppm CHANNEL=0"
+	@echo "    - Extract channel (0=Blue, 1=Green, 2=Red)"
+	@echo "  $(GREEN)make run-effects$(NC) INPUT=in.ppm OUTPUT=out.ppm EFFECT=negative"
+	@echo "    - Apply effect (negative, mirror, rotate, intensity)"
+	@echo "  $(GREEN)make test-exe1$(NC)       - Test channel extraction"
+	@echo "  $(GREEN)make test-effects$(NC)    - Test image effects"
+	@echo ""
+	@echo "$(YELLOW)Running Codecs:$(NC)"
+	@echo "  $(GREEN)make run$(NC) FILE=file.pgm     - Auto-detect and run codec"
+	@echo "  $(GREEN)make run-image$(NC) FILE=file.pgm"
+	@echo "  $(GREEN)make run-audio$(NC) FILE=file.wav"
+	@echo "  $(GREEN)make run-codec$(NC) FILE=file.pgm"
+	@echo ""
+	@echo "$(YELLOW)Testing:$(NC)"
+	@echo "  $(GREEN)make test$(NC)            - Run all tests"
+	@echo "  $(GREEN)make test-image$(NC)      - Test image codec"
+	@echo "  $(GREEN)make test-audio$(NC)      - Test audio codec"
+	@echo "  $(GREEN)make quick-test$(NC)      - Quick sanity check"
+	@echo ""
+	@echo "$(YELLOW)Benchmarking:$(NC)"
+	@echo "  $(GREEN)make benchmark$(NC)       - Benchmark all codecs"
+	@echo "  $(GREEN)make benchmark-image$(NC) FILE=file.pgm"
+	@echo "  $(GREEN)make benchmark-audio$(NC) FILE=file.wav"
+	@echo ""
+	@echo "$(YELLOW)Cleaning:$(NC)"
+	@echo "  $(GREEN)make clean$(NC)           - Remove build artifacts"
+	@echo "  $(GREEN)make clean-output$(NC)    - Remove test outputs"
+	@echo "  $(GREEN)make distclean$(NC)       - Full clean"
+	@echo "  $(GREEN)make rebuild$(NC)         - Clean and rebuild"
+	@echo ""
+	@echo "$(YELLOW)Information:$(NC)"
+	@echo "  $(GREEN)make check$(NC)           - Show build status"
+	@echo "  $(GREEN)make info$(NC)            - Show build configuration"
+	@echo "  $(GREEN)make show-structure$(NC)  - Show project structure"
+	@echo "  $(GREEN)make list-output$(NC)     - List output files"
+	@echo "  $(GREEN)make help$(NC)            - Show this help"
+
+.PHONY: all directories clean clean-output distclean rebuild \
+        part1 codecs image audio debug release \
+        run run-exe1 run-effects run-image run-audio run-codec \
+        test test-available test-exe1 test-effects test-image test-audio test-codec quick-test \
+        benchmark benchmark-image benchmark-audio \
+        check show-structure list-output info help
