@@ -1,358 +1,633 @@
-#include "codec/audio_codec.hpp"
+#include "../../includes/codec/audio_codec.hpp"
+#include "../../includes/bitstream.hpp"
+#include "../../includes/golomb.hpp"
 #include <fstream>
+#include <iostream>
 #include <cmath>
 #include <algorithm>
-#include <iostream>
-#include <limits>
+#include <vector>
+#include <cstring>
 
-// Constructor
-AudioCodec::AudioCodec(PredictorType predictor, StereoMode stereoMode, int m, bool adaptive)
-    : predictor(predictor), stereoMode(stereoMode), m(m), adaptive(adaptive)
+// ==================== AudioCodec Implementation ====================
+
+AudioCodec::AudioCodec(PredictorType predictor, ChannelMode channelMode,
+                       int fixedM, bool adaptiveM)
+    : predictor_(predictor),
+      channelMode_(channelMode),
+      fixedM_(fixedM),
+      adaptiveM_(adaptiveM),
+      blockSize_(1024)
 {
-    lastStats = {};
 }
 
-// Destructor
-AudioCodec::~AudioCodec()
+AudioCodec::AudioCodec()
+    : predictor_(PredictorType::LINEAR2),
+      channelMode_(ChannelMode::INDEPENDENT),
+      fixedM_(0),
+      adaptiveM_(true),
+      blockSize_(1024)
 {
-    // Nothing to clean up
 }
 
-// Predictor implementations
-int32_t AudioCodec::predictLinear1(const std::vector<int32_t> &samples, size_t pos)
+void AudioCodec::setBlockSize(int blockSize)
+{
+    blockSize_ = blockSize;
+}
+
+AudioCodec::CompressionStats AudioCodec::getLastStats() const
+{
+    return lastStats_;
+}
+
+// ==================== Prediction Functions ====================
+
+int16_t AudioCodec::predictSample(const std::vector<int16_t> &history,
+                                  size_t pos, PredictorType type) const
 {
     if (pos == 0)
         return 0;
-    return samples[pos - 1];
-}
 
-int32_t AudioCodec::predictLinear2(const std::vector<int32_t> &samples, size_t pos)
-{
-    if (pos < 2)
-        return predictLinear1(samples, pos);
-    return 2 * samples[pos - 1] - samples[pos - 2];
-}
-
-int32_t AudioCodec::predictLinear3(const std::vector<int32_t> &samples, size_t pos)
-{
-    if (pos < 3)
-        return predictLinear2(samples, pos);
-    return 3 * samples[pos - 1] - 3 * samples[pos - 2] + samples[pos - 3];
-}
-
-int32_t AudioCodec::predictAdaptive(const std::vector<int32_t> &samples, size_t pos,
-                                    PredictorType &usedPredictor)
-{
-    // For first few samples, use simpler predictors
-    if (pos < 3)
+    switch (type)
     {
-        usedPredictor = PredictorType::LINEAR_1;
-        return predictLinear1(samples, pos);
+    case PredictorType::NONE:
+        return 0;
+
+    case PredictorType::LINEAR1:
+        return history[pos - 1];
+
+    case PredictorType::LINEAR2:
+        if (pos < 2)
+            return history[pos - 1];
+        return 2 * history[pos - 1] - history[pos - 2];
+
+    case PredictorType::LINEAR3:
+        if (pos < 3)
+        {
+            if (pos < 2)
+                return history[pos - 1];
+            return 2 * history[pos - 1] - history[pos - 2];
+        }
+        return 3 * history[pos - 1] - 3 * history[pos - 2] + history[pos - 3];
+
+    case PredictorType::ADAPTIVE:
+    {
+        if (pos < 2)
+            return history[pos - 1];
+        if (pos < 3)
+            return 2 * history[pos - 1] - history[pos - 2];
+
+        // Try all predictors and choose the one with smallest absolute error
+        int16_t pred1 = history[pos - 1];
+        int16_t pred2 = 2 * history[pos - 1] - history[pos - 2];
+        int16_t pred3 = 3 * history[pos - 1] - 3 * history[pos - 2] + history[pos - 3];
+
+        int32_t err1 = std::abs((int32_t)history[pos - 1] - pred1);
+        int32_t err2 = std::abs((int32_t)history[pos - 1] - pred2);
+        int32_t err3 = std::abs((int32_t)history[pos - 1] - pred3);
+
+        if (err1 <= err2 && err1 <= err3)
+            return pred1;
+        if (err2 <= err3)
+            return pred2;
+        return pred3;
     }
 
-    // Choose predictor based on recent prediction errors
-    // In practice, you'd track errors; here we'll use LINEAR_2 as default
-    usedPredictor = PredictorType::LINEAR_2;
-    return predictLinear2(samples, pos);
+    default:
+        return 0;
+    }
 }
 
-// Mid-side stereo transform
-void AudioCodec::midSideTransform(const std::vector<int32_t> &left,
-                                  const std::vector<int32_t> &right,
-                                  std::vector<int32_t> &mid,
-                                  std::vector<int32_t> &side)
-{
-    size_t n = left.size();
-    mid.resize(n);
-    side.resize(n);
+// ==================== M Parameter Calculation ====================
 
-    for (size_t i = 0; i < n; i++)
+int AudioCodec::calculateOptimalM(const std::vector<int16_t> &residuals) const
+{
+    if (residuals.empty())
+        return 8;
+
+    // Calculate mean absolute value of residuals
+    double sum = 0;
+    for (int16_t r : residuals)
     {
-        mid[i] = (left[i] + right[i]) / 2;
+        sum += std::abs(r);
+    }
+    double mean = sum / residuals.size();
+
+    // Optimal M is approximately 0.95 * mean (Golomb-Rice optimal parameter)
+    int m = static_cast<int>(std::max(1.0, 0.95 * mean));
+
+    // Clamp to reasonable range
+    m = std::max(1, std::min(65535, m));
+
+    return m;
+}
+
+// ==================== Channel Encoding/Decoding ====================
+
+void AudioCodec::applyMidSideEncoding(const std::vector<int16_t> &left,
+                                      const std::vector<int16_t> &right,
+                                      std::vector<int16_t> &mid,
+                                      std::vector<int16_t> &side) const
+{
+    mid.resize(left.size());
+    side.resize(left.size());
+
+    for (size_t i = 0; i < left.size(); i++)
+    {
+        int32_t l = left[i];
+        int32_t r = right[i];
+        mid[i] = (l + r) / 2;
+        side[i] = l - r;
+    }
+}
+
+void AudioCodec::applyMidSideDecoding(const std::vector<int16_t> &mid,
+                                      const std::vector<int16_t> &side,
+                                      std::vector<int16_t> &left,
+                                      std::vector<int16_t> &right) const
+{
+    left.resize(mid.size());
+    right.resize(mid.size());
+
+    for (size_t i = 0; i < mid.size(); i++)
+    {
+        int32_t m = mid[i];
+        int32_t s = side[i];
+        left[i] = m + s / 2;
+        right[i] = m - (s + 1) / 2;
+    }
+}
+
+void AudioCodec::applyLeftSideEncoding(const std::vector<int16_t> &left,
+                                       const std::vector<int16_t> &right,
+                                       std::vector<int16_t> &leftOut,
+                                       std::vector<int16_t> &side) const
+{
+    leftOut = left;
+    side.resize(left.size());
+
+    for (size_t i = 0; i < left.size(); i++)
+    {
         side[i] = left[i] - right[i];
     }
 }
 
-void AudioCodec::inverseMidSideTransform(const std::vector<int32_t> &mid,
-                                         const std::vector<int32_t> &side,
-                                         std::vector<int32_t> &left,
-                                         std::vector<int32_t> &right)
+void AudioCodec::applyLeftSideDecoding(const std::vector<int16_t> &leftIn,
+                                       const std::vector<int16_t> &side,
+                                       std::vector<int16_t> &left,
+                                       std::vector<int16_t> &right) const
 {
-    size_t n = mid.size();
-    left.resize(n);
-    right.resize(n);
+    left = leftIn;
+    right.resize(leftIn.size());
 
-    for (size_t i = 0; i < n; i++)
+    for (size_t i = 0; i < leftIn.size(); i++)
     {
-        // Exact integer reconstruction
-        int32_t side_div2 = side[i] >> 1;
-        left[i] = mid[i] + side[i] - side_div2;
-        right[i] = mid[i] - side_div2;
+        right[i] = leftIn[i] - side[i];
     }
 }
 
-// Estimate optimal m parameter
-int AudioCodec::estimateOptimalM(const std::vector<int32_t> &residuals,
-                                 size_t start, size_t count)
+// ==================== Encoding Implementation ====================
+
+bool AudioCodec::encodeMono(const std::vector<int16_t> &samples,
+                            uint32_t sampleRate, uint16_t bitsPerSample,
+                            const std::string &outputFile)
 {
-    if (count == 0)
-        return 16; // Default
-
-    double sum = 0.0;
-    size_t end = std::min(start + count, residuals.size());
-
-    for (size_t i = start; i < end; i++)
+    try
     {
-        sum += std::abs(residuals[i]);
+        BitStream bs(outputFile, std::ios::out | std::ios::binary);
+
+        // Write header
+        bs.writeString("GOLOMB_MONO");
+        bs.writeBits(sampleRate, 32);
+        bs.writeBits(bitsPerSample, 16);
+        bs.writeBits(samples.size(), 32);
+        bs.writeBits(static_cast<uint8_t>(predictor_), 8);
+        bs.writeBits(adaptiveM_ ? 1 : 0, 1);
+        bs.writeBits(fixedM_, 16);
+        bs.writeBits(blockSize_, 32);
+        bs.flush(); // Ensure header is written
+
+        // Encode samples in blocks
+        size_t totalSamples = samples.size();
+        size_t blockStart = 0;
+        std::vector<int16_t> residuals;
+
+        while (blockStart < totalSamples)
+        {
+            size_t blockEnd = std::min(blockStart + blockSize_, totalSamples);
+            size_t blockLen = blockEnd - blockStart;
+
+            // Calculate residuals for this block
+            residuals.clear();
+            residuals.reserve(blockLen);
+
+            for (size_t i = blockStart; i < blockEnd; i++)
+            {
+                int16_t prediction = predictSample(samples, i, predictor_);
+                int16_t residual = samples[i] - prediction;
+                residuals.push_back(residual);
+            }
+
+            // Calculate optimal M for this block
+            int m = adaptiveM_ ? calculateOptimalM(residuals) : fixedM_;
+            if (m < 1)
+                m = 1;
+            m = std::min(m, 32767); // Clamp M to valid range
+
+            // Write M parameter
+            bs.writeBits(m, 16);
+
+            // Encode residuals with Golomb coding
+            Golomb golomb(m, Golomb::HandleSignApproach::ODD_EVEN_MAPPING);
+            for (int16_t residual : residuals)
+            {
+                golomb.encode(residual, bs);
+            }
+
+            blockStart = blockEnd;
+        }
+
+        bs.close();
+
+        // Calculate statistics
+        std::ifstream compFile(outputFile, std::ios::binary | std::ios::ate);
+        lastStats_.compressedSize = compFile.tellg();
+        compFile.close();
+
+        lastStats_.originalSize = samples.size() * sizeof(int16_t);
+        lastStats_.compressionRatio = lastStats_.compressedSize > 0 ? (double)lastStats_.originalSize / lastStats_.compressedSize : 1.0;
+        lastStats_.bitsPerSample = lastStats_.compressedSize > 0 ? (double)(lastStats_.compressedSize * 8) / samples.size() : 16.0;
+        lastStats_.optimalM = adaptiveM_ ? calculateOptimalM(residuals) : fixedM_;
+
+        return lastStats_.compressionRatio > 0;
     }
-
-    double mean = sum / (end - start);
-
-    // For audio, use a slightly different formula
-    // m should be close to mean of absolute residuals
-    int estimated_m = static_cast<int>(mean + 0.5);
-
-    // Clamp to reasonable range for audio
-    return std::max(4, std::min(128, estimated_m));
-}
-
-// Encode single channel
-bool AudioCodec::encodeChannel(const std::vector<int32_t> &samples,
-                               BitStream &bs, int &optimalM)
-{
-    if (samples.empty())
+    catch (const std::exception &e)
+    {
+        std::cerr << "Encoding error: " << e.what() << std::endl;
         return false;
-
-    // Compute residuals
-    std::vector<int32_t> residuals(samples.size());
-    PredictorType usedPredictor;
-
-    for (size_t i = 0; i < samples.size(); i++)
-    {
-        int32_t prediction;
-
-        switch (predictor)
-        {
-        case PredictorType::LINEAR_1:
-            prediction = predictLinear1(samples, i);
-            break;
-        case PredictorType::LINEAR_2:
-            prediction = predictLinear2(samples, i);
-            break;
-        case PredictorType::LINEAR_3:
-            prediction = predictLinear3(samples, i);
-            break;
-        case PredictorType::ADAPTIVE:
-            prediction = predictAdaptive(samples, i, usedPredictor);
-            break;
-        }
-
-        residuals[i] = samples[i] - prediction;
     }
-
-    // Estimate optimal m if needed
-    if (m == 0 || adaptive)
-    {
-        optimalM = estimateOptimalM(residuals, 0, residuals.size());
-    }
-    else
-    {
-        optimalM = m;
-    }
-
-    // Write optimal m to bitstream
-    bs.writeBits(optimalM, 16);
-
-    // Encode residuals using Golomb coding with ODD_EVEN_MAPPING for signed integers
-    Golomb golomb(optimalM, Golomb::HandleSignApproach::ODD_EVEN_MAPPING);
-    for (int32_t residual : residuals)
-    {
-        golomb.encode(residual, bs);
-    }
-
-    return true;
 }
 
-// Decode single channel
-bool AudioCodec::decodeChannel(std::vector<int32_t> &samples,
-                               size_t numSamples, BitStream &bs)
+bool AudioCodec::encodeStereo(const std::vector<int16_t> &left,
+                              const std::vector<int16_t> &right,
+                              uint32_t sampleRate, uint16_t bitsPerSample,
+                              const std::string &outputFile)
 {
-    samples.resize(numSamples);
-
-    // Read m parameter from bitstream
-    int decode_m = bs.readBits(16);
-
-    // Create Golomb decoder with same approach as encoder
-    Golomb golomb(decode_m, Golomb::HandleSignApproach::ODD_EVEN_MAPPING);
-
-    // Decode residuals and reconstruct samples
-    PredictorType usedPredictor;
-
-    for (size_t i = 0; i < numSamples; i++)
+    try
     {
-        int32_t residual = golomb.decode(bs);
+        BitStream bs(outputFile, std::ios::out | std::ios::binary);
 
-        int32_t prediction;
-        switch (predictor)
+        // Write header
+        bs.writeString("GOLOMB_STEREO");
+        bs.writeBits(sampleRate, 32);
+        bs.writeBits(bitsPerSample, 16);
+        bs.writeBits(left.size(), 32);
+        bs.writeBits(static_cast<uint8_t>(predictor_), 8);
+        bs.writeBits(static_cast<uint8_t>(channelMode_), 8);
+        bs.writeBits(adaptiveM_ ? 1 : 0, 1);
+        bs.writeBits(fixedM_, 16);
+        bs.writeBits(blockSize_, 32);
+        bs.flush(); // Ensure header is written
+
+        // Apply channel coding
+        std::vector<int16_t> ch1, ch2;
+
+        switch (channelMode_)
         {
-        case PredictorType::LINEAR_1:
-            prediction = predictLinear1(samples, i);
+        case ChannelMode::MID_SIDE:
+            applyMidSideEncoding(left, right, ch1, ch2);
             break;
-        case PredictorType::LINEAR_2:
-            prediction = predictLinear2(samples, i);
+        case ChannelMode::LEFT_SIDE:
+            applyLeftSideEncoding(left, right, ch1, ch2);
             break;
-        case PredictorType::LINEAR_3:
-            prediction = predictLinear3(samples, i);
-            break;
-        case PredictorType::ADAPTIVE:
-            prediction = predictAdaptive(samples, i, usedPredictor);
+        case ChannelMode::INDEPENDENT:
+        default:
+            ch1 = left;
+            ch2 = right;
             break;
         }
 
-        samples[i] = prediction + residual;
-    }
+        // Encode both channels
+        encodeChannel(bs, ch1);
+        encodeChannel(bs, ch2);
 
-    return true;
+        bs.close();
+
+        // Calculate statistics
+        std::ifstream compFile(outputFile, std::ios::binary | std::ios::ate);
+        lastStats_.compressedSize = compFile.tellg();
+        compFile.close();
+
+        lastStats_.originalSize = left.size() * 2 * sizeof(int16_t);
+        lastStats_.compressionRatio = lastStats_.compressedSize > 0 ? (double)lastStats_.originalSize / lastStats_.compressedSize : 1.0;
+        lastStats_.bitsPerSample = lastStats_.compressedSize > 0 ? (double)(lastStats_.compressedSize * 8) / (left.size() * 2) : 16.0;
+
+        std::vector<int16_t> testResiduals;
+        for (size_t i = 0; i < std::min(blockSize_, ch1.size()); i++)
+        {
+            int16_t pred = predictSample(ch1, i, predictor_);
+            testResiduals.push_back(ch1[i] - pred);
+        }
+        lastStats_.optimalM = adaptiveM_ ? calculateOptimalM(testResiduals) : fixedM_;
+
+        return lastStats_.compressionRatio > 0;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Encoding error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
-// Main encode function
-bool AudioCodec::encode(const std::vector<int32_t> &audioData,
-                        int channels,
-                        int sampleRate,
-                        int bitsPerSample,
-                        const std::string &outputFile)
+void AudioCodec::encodeChannel(BitStream &bs, const std::vector<int16_t> &samples)
 {
-    // Open BitStream for writing
-    BitStream bs(outputFile, std::ios::out | std::ios::binary);
+    size_t totalSamples = samples.size();
+    size_t blockStart = 0;
+    std::vector<int16_t> residuals;
+    int blockNum = 0;
 
-    // Write header
-    bs.writeBits(0x474F4C4D, 32); // "GOLM" magic number
-    bs.writeBits(channels, 8);
-    bs.writeBits(sampleRate, 32);
-    bs.writeBits(bitsPerSample, 8);
-    bs.writeBits(static_cast<int>(predictor), 8);
-    bs.writeBits(static_cast<int>(stereoMode), 8);
-    bs.writeBits(audioData.size() / channels, 32); // Samples per channel
+    std::cout << "  Encoding channel with " << totalSamples << " samples in blocks of " << blockSize_ << std::endl;
 
-    size_t originalSize = audioData.size() * (bitsPerSample / 8);
-    int optimalM = m;
-
-    if (channels == 1)
+    while (blockStart < totalSamples)
     {
-        // Mono encoding
-        encodeChannel(audioData, bs, optimalM);
+        size_t blockEnd = std::min(blockStart + blockSize_, totalSamples);
+        size_t blockLen = blockEnd - blockStart;
+
+        // Calculate residuals
+        residuals.clear();
+        residuals.reserve(blockLen);
+
+        for (size_t i = blockStart; i < blockEnd; i++)
+        {
+            int16_t prediction = predictSample(samples, i, predictor_);
+            int16_t residual = samples[i] - prediction;
+            residuals.push_back(residual);
+        }
+
+        // Calculate optimal M
+        int m = adaptiveM_ ? calculateOptimalM(residuals) : fixedM_;
+        if (m < 1)
+            m = 1;
+        m = std::min(m, 32767);
+
+        // Debug: Print block info
+        if (blockNum % 100 == 0)
+        {
+            std::cout << "    Block " << blockNum << ": samples " << blockStart
+                      << "-" << blockEnd << ", M=" << m
+                      << ", blockLen=" << blockLen << std::endl;
+        }
+
+        // Write M parameter
+        bs.writeBits(m, 16);
+
+        // Encode residuals
+        Golomb golomb(m, Golomb::HandleSignApproach::ODD_EVEN_MAPPING);
+        for (int16_t residual : residuals)
+        {
+            golomb.encode(residual, bs);
+        }
+
+        blockStart = blockEnd;
+        blockNum++;
     }
-    else if (channels == 2)
-    {
-        // Stereo encoding
-        std::vector<int32_t> left, right;
-        for (size_t i = 0; i < audioData.size(); i += 2)
-        {
-            left.push_back(audioData[i]);
-            right.push_back(audioData[i + 1]);
-        }
 
-        if (stereoMode == StereoMode::MID_SIDE || stereoMode == StereoMode::ADAPTIVE)
-        {
-            std::vector<int32_t> mid, side;
-            midSideTransform(left, right, mid, side);
-            bs.writeBits(1, 1); // Flag: mid-side encoded
-            encodeChannel(mid, bs, optimalM);
-            encodeChannel(side, bs, optimalM);
-        }
-        else
-        {
-            bs.writeBits(0, 1); // Flag: independent channels
-            encodeChannel(left, bs, optimalM);
-            encodeChannel(right, bs, optimalM);
-        }
-    }
+    std::cout << "  Encoded " << blockNum << " blocks, " << totalSamples << " total samples" << std::endl;
 
-    // Close bitstream before reading file size
-    bs.close();
-
-    // Calculate compressed size from file
-    std::ifstream file(outputFile, std::ios::binary | std::ios::ate);
-    size_t compressedSize = file.tellg();
-    file.close();
-
-    // Update statistics
-    lastStats.originalSize = originalSize;
-    lastStats.compressedSize = compressedSize;
-    lastStats.compressionRatio = static_cast<double>(originalSize) / compressedSize;
-    lastStats.bitsPerSample = (compressedSize * 8.0) / (audioData.size() / channels);
-    lastStats.optimalM = optimalM;
-    lastStats.bestPredictor = predictor;
-    lastStats.bestStereoMode = stereoMode;
-    lastStats.channels = channels;
-    lastStats.sampleRate = sampleRate;
-    lastStats.bitsPerSampleOriginal = bitsPerSample;
-
-    return true;
+    // CRITICAL: Flush and align to byte boundary after encoding channel
+    bs.flush();
+    bs.alignToByte(); // Ensure next channel starts on byte boundary
 }
 
-// Main decode function
+// ==================== Decoding Implementation ====================
+
 bool AudioCodec::decode(const std::string &inputFile,
-                        std::vector<int32_t> &audioData,
-                        int &channels,
-                        int &sampleRate,
-                        int &bitsPerSample)
+                        std::vector<int16_t> &left, std::vector<int16_t> &right,
+                        uint32_t &sampleRate, uint16_t &numChannels,
+                        uint16_t &bitsPerSample)
 {
-    // Open BitStream for reading
-    BitStream bs(inputFile, std::ios::in | std::ios::binary);
-
-    // Read and verify header
-    uint32_t magic = bs.readBits(32);
-    if (magic != 0x474F4C4D)
+    try
     {
-        std::cerr << "Invalid file format (magic: 0x" << std::hex << magic << ")" << std::endl;
-        return false;
-    }
+        BitStream bs(inputFile, std::ios::in | std::ios::binary);
 
-    channels = bs.readBits(8);
-    sampleRate = bs.readBits(32);
-    bitsPerSample = bs.readBits(8);
-    predictor = static_cast<PredictorType>(bs.readBits(8));
-    stereoMode = static_cast<StereoMode>(bs.readBits(8));
-    size_t samplesPerChannel = bs.readBits(32);
+        // Read header
+        std::string magic = bs.readString();
 
-    if (channels == 1)
-    {
-        // Mono decoding
-        decodeChannel(audioData, samplesPerChannel, bs);
-    }
-    else if (channels == 2)
-    {
-        // Stereo decoding
-        bool midSideEncoded = bs.readBits(1);
-
-        std::vector<int32_t> chan1, chan2;
-        decodeChannel(chan1, samplesPerChannel, bs);
-        decodeChannel(chan2, samplesPerChannel, bs);
-
-        if (midSideEncoded)
+        if (magic == "GOLOMB_MONO")
         {
-            std::vector<int32_t> left, right;
-            inverseMidSideTransform(chan1, chan2, left, right);
-
-            audioData.resize(samplesPerChannel * 2);
-            for (size_t i = 0; i < samplesPerChannel; i++)
-            {
-                audioData[i * 2] = left[i];
-                audioData[i * 2 + 1] = right[i];
-            }
+            return decodeMono(bs, left, right, sampleRate, numChannels, bitsPerSample);
+        }
+        else if (magic == "GOLOMB_STEREO")
+        {
+            return decodeStereo(bs, left, right, sampleRate, numChannels, bitsPerSample);
         }
         else
         {
-            audioData.resize(samplesPerChannel * 2);
-            for (size_t i = 0; i < samplesPerChannel; i++)
-            {
-                audioData[i * 2] = chan1[i];
-                audioData[i * 2 + 1] = chan2[i];
-            }
+            std::cerr << "Invalid file format: " << magic << std::endl;
+            return false;
         }
     }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Decoding error: " << e.what() << std::endl;
+        return false;
+    }
+}
 
-    bs.close();
-    return true;
+bool AudioCodec::decodeMono(BitStream &bs, std::vector<int16_t> &left,
+                            std::vector<int16_t> &right,
+                            uint32_t &sampleRate, uint16_t &numChannels,
+                            uint16_t &bitsPerSample)
+{
+    // Read header
+    sampleRate = bs.readBits(32);
+    bitsPerSample = bs.readBits(16);
+    uint32_t totalSamples = bs.readBits(32);
+    PredictorType predictor = static_cast<PredictorType>(bs.readBits(8));
+    bool adaptiveM = bs.readBits(1);
+    int fixedM = bs.readBits(16);
+    size_t blockSize = bs.readBits(32);
+
+    numChannels = 1;
+    left.clear();
+    left.reserve(totalSamples);
+    right.clear();
+
+    // Decode samples block by block
+    size_t samplesDecoded = 0;
+
+    while (samplesDecoded < totalSamples)
+    {
+        // Check if we can read more data
+        if (bs.eof())
+        {
+            std::cerr << "Unexpected EOF: decoded " << samplesDecoded
+                      << " of " << totalSamples << " samples" << std::endl;
+            return false;
+        }
+
+        // Read M parameter for this block
+        int m = bs.readBits(16);
+        if (m < 1)
+        {
+            std::cerr << "Invalid M parameter: " << m << std::endl;
+            return false;
+        }
+
+        // Determine block size
+        size_t blockLen = std::min(blockSize, totalSamples - samplesDecoded);
+
+        // Decode residuals
+        Golomb golomb(m, Golomb::HandleSignApproach::ODD_EVEN_MAPPING);
+        std::vector<int16_t> residuals;
+        residuals.reserve(blockLen);
+
+        for (size_t i = 0; i < blockLen; i++)
+        {
+            if (bs.eof())
+            {
+                std::cerr << "Unexpected EOF while reading residuals at sample "
+                          << (samplesDecoded + i) << std::endl;
+                return false;
+            }
+            int residual = golomb.decode(bs);
+            residuals.push_back(static_cast<int16_t>(residual));
+        }
+
+        // Reconstruct samples from residuals
+        for (size_t i = 0; i < residuals.size(); i++)
+        {
+            int16_t prediction = predictSample(left, left.size(), predictor);
+            int16_t sample = prediction + residuals[i];
+            left.push_back(sample);
+        }
+
+        samplesDecoded += blockLen;
+    }
+
+    return left.size() == totalSamples;
+}
+
+bool AudioCodec::decodeStereo(BitStream &bs, std::vector<int16_t> &left,
+                              std::vector<int16_t> &right,
+                              uint32_t &sampleRate, uint16_t &numChannels,
+                              uint16_t &bitsPerSample)
+{
+    // Read header
+    sampleRate = bs.readBits(32);
+    bitsPerSample = bs.readBits(16);
+    uint32_t totalSamples = bs.readBits(32);
+    PredictorType predictor = static_cast<PredictorType>(bs.readBits(8));
+    ChannelMode channelMode = static_cast<ChannelMode>(bs.readBits(8));
+    bool adaptiveM = bs.readBits(1);
+    int fixedM = bs.readBits(16);
+    size_t blockSize = bs.readBits(32);
+
+    numChannels = 2;
+
+    // Decode both channels
+    std::vector<int16_t> ch1, ch2;
+    if (!decodeChannel(bs, ch1, totalSamples, blockSize, predictor))
+        return false;
+    if (!decodeChannel(bs, ch2, totalSamples, blockSize, predictor))
+        return false;
+
+    // Apply channel decoding
+    switch (channelMode)
+    {
+    case ChannelMode::MID_SIDE:
+        applyMidSideDecoding(ch1, ch2, left, right);
+        break;
+    case ChannelMode::LEFT_SIDE:
+        applyLeftSideDecoding(ch1, ch2, left, right);
+        break;
+    case ChannelMode::INDEPENDENT:
+    default:
+        left = ch1;
+        right = ch2;
+        break;
+    }
+
+    return left.size() == totalSamples && right.size() == totalSamples;
+}
+
+bool AudioCodec::decodeChannel(BitStream &bs, std::vector<int16_t> &samples,
+                               size_t totalSamples, size_t blockSize,
+                               PredictorType predictor)
+{
+    // CRITICAL: Align to byte boundary before reading channel
+    bs.alignToByte();
+
+    samples.clear();
+    samples.reserve(totalSamples);
+
+    size_t samplesDecoded = 0;
+    int blockNum = 0;
+
+    std::cout << "  Decoding channel expecting " << totalSamples << " samples in blocks of " << blockSize << std::endl;
+
+    while (samplesDecoded < totalSamples)
+    {
+        // Check if we can read more data
+        if (bs.eof())
+        {
+            std::cerr << "  ERROR: Unexpected EOF at block " << blockNum
+                      << ": decoded " << samplesDecoded
+                      << " of " << totalSamples << " samples" << std::endl;
+            return false;
+        }
+
+        // Read M parameter
+        int m = bs.readBits(16);
+        if (m < 1)
+        {
+            std::cerr << "  ERROR: Invalid M parameter in block " << blockNum
+                      << ": M=" << m << std::endl;
+            return false;
+        }
+
+        // Determine block size
+        size_t blockLen = std::min(blockSize, totalSamples - samplesDecoded);
+
+        // Debug: Print block info
+        if (blockNum % 100 == 0)
+        {
+            std::cout << "    Block " << blockNum << ": expecting " << blockLen
+                      << " samples, M=" << m
+                      << ", total decoded so far: " << samplesDecoded << std::endl;
+        }
+
+        // Decode residuals
+        Golomb golomb(m, Golomb::HandleSignApproach::ODD_EVEN_MAPPING);
+        std::vector<int16_t> residuals;
+        residuals.reserve(blockLen);
+
+        for (size_t i = 0; i < blockLen; i++)
+        {
+            if (bs.eof())
+            {
+                std::cerr << "  ERROR: Unexpected EOF in block " << blockNum
+                          << " while reading residual " << i
+                          << " of " << blockLen
+                          << " (sample " << (samplesDecoded + i) << " overall)" << std::endl;
+                std::cerr << "  Decoded " << samplesDecoded << " samples successfully before error" << std::endl;
+                return false;
+            }
+            int residual = golomb.decode(bs);
+            residuals.push_back(static_cast<int16_t>(residual));
+        }
+
+        // Reconstruct samples
+        for (size_t i = 0; i < residuals.size(); i++)
+        {
+            int16_t prediction = predictSample(samples, samples.size(), predictor);
+            int16_t sample = prediction + residuals[i];
+            samples.push_back(sample);
+        }
+
+        samplesDecoded += blockLen;
+        blockNum++;
+    }
+
+    std::cout << "  Successfully decoded " << blockNum << " blocks, " << samplesDecoded << " total samples" << std::endl;
+    return samples.size() == totalSamples;
 }
