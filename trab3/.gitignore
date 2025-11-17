@@ -1,0 +1,31 @@
+# Build files
+build/
+*.o
+*.a
+*.so
+
+# Binary directory
+bin/
+
+# Output files (compressed, results, etc.)
+output/*.stcmp
+output/*.safetensors
+output/*.json
+output/*.csv
+
+# Large test files (important!)
+test/*.safetensors
+
+# Temporary files
+*.tmp
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
