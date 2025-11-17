@@ -6,31 +6,40 @@
 #include <vector>
 #include <cstdint>
 
-class BitStream {
-    private:
-        std::fstream file;
-        char buffer;
-        int bitPosition; // Tracks the bit position within the current byte
+class BitStream
+{
+private:
+    std::fstream file;
+    uint8_t writeBitBuffer; // Current byte being built for writing
+    int writeBitPos;        // Position in writeBitBuffer (0-7, 0=empty)
 
-        void flushBuffer();  // Writes remaining bits in the buffer to the file
-        void fillBuffer();   // Fills the buffer from the file when reading bits
+    uint8_t readBitBuffer; // Current byte being read
+    int readBitPos;        // Position in readBitBuffer (0-7, 0=need new byte)
+    bool isEOF;
 
-    public:
-        BitStream(const std::string& fileName, std::ios::openmode mode);
-        ~BitStream();
+    void flushWriteBuffer();
+    void fillReadBuffer();
 
-        void writeBit(bool bit);
-        bool readBit();
+public:
+    BitStream(const std::string &fileName, std::ios::openmode mode);
+    ~BitStream();
 
-        void writeBits(uint64_t value, int n);
-        uint64_t readBits(int n);
+    void writeBit(bool bit);
+    bool readBit();
 
-        void writeString(const std::string& str);
-        std::string readString();
+    void writeBits(uint64_t value, int n);
+    uint64_t readBits(int n);
 
-        bool eof() const; // Check if the end of the file has been reached
+    void writeString(const std::string &str);
+    std::string readString();
 
-        void close(); // Close the file safely
+    bool eof() const;
+    void close();
+
+    void flush();
+    
+    // Align bitstream to next byte boundary
+    void alignToByte();
 };
 
 #endif // BITSTREAM_HPP

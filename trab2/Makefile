@@ -272,21 +272,63 @@ test-exe1: $(CHANNEL_EXTRACT)
 	fi
 
 # Run image effects
+# Run image effects
 run-effects: $(IMAGE_EFFECTS)
 	@if [ -n "$(INPUT)" ] && [ -n "$(OUTPUT)" ] && [ -n "$(EFFECT)" ]; then \
 		echo "$(YELLOW)Running image effects: $(EFFECT)$(NC)"; \
-		$(IMAGE_EFFECTS) $(INPUT) $(OUTPUT) $(EFFECT); \
+		if [ "$(EFFECT)" = "rotate" ]; then \
+			if [ -n "$(ANGLE)" ]; then \
+				$(IMAGE_EFFECTS) $(INPUT) $(OUTPUT) $(EFFECT) $(ANGLE); \
+			else \
+				echo "$(RED)Error: ANGLE parameter required for rotate effect$(NC)"; \
+				echo "$(YELLOW)Usage: make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=rotate ANGLE=90$(NC)"; \
+				exit 1; \
+			fi; \
+		elif [ "$(EFFECT)" = "intensity" ]; then \
+			if [ -n "$(FACTOR)" ]; then \
+				$(IMAGE_EFFECTS) $(INPUT) $(OUTPUT) $(EFFECT) $(FACTOR); \
+			else \
+				echo "$(RED)Error: FACTOR parameter required for intensity effect$(NC)"; \
+				echo "$(YELLOW)Usage: make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=intensity FACTOR=1.5$(NC)"; \
+				exit 1; \
+			fi; \
+		else \
+			$(IMAGE_EFFECTS) $(INPUT) $(OUTPUT) $(EFFECT); \
+		fi \
 	else \
-		echo "$(YELLOW)Usage: make run-effects INPUT=input.ppm OUTPUT=output.ppm EFFECT=negative$(NC)"; \
-		echo "Available effects: negative, mirror, rotate, intensity"; \
+		echo "$(YELLOW)Usage Examples:$(NC)"; \
+		echo "  $(CYAN)make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=negative$(NC)"; \
+		echo "  $(CYAN)make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=mirror$(NC)"; \
+		echo "  $(CYAN)make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=rotate ANGLE=90$(NC)"; \
+		echo "  $(CYAN)make run-effects INPUT=in.ppm OUTPUT=out.ppm EFFECT=intensity FACTOR=1.5$(NC)"; \
+		echo ""; \
+		echo "$(YELLOW)Available effects:$(NC)"; \
+		echo "  - negative  : Invert colors"; \
+		echo "  - mirror    : Horizontal mirror"; \
+		echo "  - rotate    : Rotate by angle (requires ANGLE parameter)"; \
+		echo "  - intensity : Adjust brightness (requires FACTOR parameter)"; \
 	fi
 
 # Test image effects
 test-effects: $(IMAGE_EFFECTS)
 	@echo "$(YELLOW)Testing image effects...$(NC)"
 	@if [ -f images/lena.ppm ]; then \
+		mkdir -p $(OUTPUT_DIR); \
+		echo "$(CYAN)Testing negative effect...$(NC)"; \
 		$(IMAGE_EFFECTS) images/lena.ppm $(OUTPUT_DIR)/test_negative.ppm negative || true; \
-		echo "$(GREEN)✓ Test output: $(OUTPUT_DIR)/test_negative.ppm$(NC)"; \
+		echo "$(CYAN)Testing mirror effect...$(NC)"; \
+		$(IMAGE_EFFECTS) images/lena.ppm $(OUTPUT_DIR)/test_mirror.ppm mirror || true; \
+		echo "$(CYAN)Testing rotate effect (90°)...$(NC)"; \
+		$(IMAGE_EFFECTS) images/lena.ppm $(OUTPUT_DIR)/test_rotate_90.ppm rotate 90 || true; \
+		echo "$(CYAN)Testing rotate effect (180°)...$(NC)"; \
+		$(IMAGE_EFFECTS) images/lena.ppm $(OUTPUT_DIR)/test_rotate_180.ppm rotate 180 || true; \
+		echo "$(CYAN)Testing intensity effect (0.5x)...$(NC)"; \
+		$(IMAGE_EFFECTS) images/lena.ppm $(OUTPUT_DIR)/test_intensity_dark.ppm intensity 0.5 || true; \
+		echo "$(CYAN)Testing intensity effect (1.5x)...$(NC)"; \
+		$(IMAGE_EFFECTS) images/lena.ppm $(OUTPUT_DIR)/test_intensity_bright.ppm intensity 1.5 || true; \
+		echo ""; \
+		echo "$(GREEN)✓ Test outputs in $(OUTPUT_DIR)/:$(NC)"; \
+		ls -lh $(OUTPUT_DIR)/test_*.ppm 2>/dev/null | awk '{print "  - " $$9 " (" $$5 ")"}' || true; \
 	else \
 		echo "$(RED)✗ Test image 'images/lena.ppm' not found$(NC)"; \
 	fi

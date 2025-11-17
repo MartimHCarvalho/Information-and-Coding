@@ -28,6 +28,12 @@ public:
     // Decode an integer value from bitstream
     int decode(BitStream& bs);
 
+    // Optimized decode for power-of-2 m values
+    int decodePow2(BitStream& bs);
+
+    // Batch decode multiple values
+    int decodeBatch(BitStream& bs, int* output, int count);
+
     // Change the m parameter
     void setM(int newM);
 
