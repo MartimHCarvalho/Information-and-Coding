@@ -5,16 +5,17 @@
 
 #### Image Effects - Exe1
 ```bash
-  make run-exe1 INPUT=in.ppm OUTPUT=out.ppm CHANNEL=number
+make run-exe1 INPUT=<input.ppm> OUTPUT=<output.ppm> CHANNEL=<number>
 ```
 **Available effects:** `0=Blue, 1=Green, 2=Red`
 
 ### Image Effects - Exe2
 ```bash
-make run-effects INPUT=<input.ppm> OUTPUT=<output.ppm> EFFECT=<effect>
+make run-effects INPUT=<input.ppm> OUTPUT=<output.ppm> EFFECT=<effect> [<PARAMETER>=<value>]
 ```
 
-**Available effects:** `negative`, `mirror`, `rotate`, `intensity`
+**Available effects:** `negative`, `mirror`, `rotate`, `intensity`<br>
+**Available parameters:** `ANGLE` for *rotate* effect and `FACTOR` for *intensity* effect
 
 **Example:**
 ```bash
@@ -28,7 +29,7 @@ make run-effects INPUT=input.ppm OUTPUT=output.ppm EFFECT=intensity FACTOR=1.5
 ```
 **Example:**
 ```bash
-./bin/image_effects images/lena.ppm output/result.ppm mirror
+./bin/image_effects images/lena.ppm output/result.ppm negative
 ```
 
 ## Audio Codec - Exe 4
