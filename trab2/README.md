@@ -58,5 +58,7 @@ make test-image
 make run-image FILE=path/to/image.pgm
 ```
 
-## HELP:
-`make help`
+## Help:
+```bash
+make help
+```
