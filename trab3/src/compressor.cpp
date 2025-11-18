@@ -11,8 +11,8 @@ std::vector<uint8_t> Compressor::compress(const std::vector<uint8_t>& data, Oper
 
     switch (op_point) {
         case OperationPoint::FAST: return compressZSTD(preprocessed, 10);
-        case OperationPoint::BALANCED: return compressZSTD(preprocessed, 15);
-        case OperationPoint::MAXIMUM: return compressLZMA(preprocessed, 9);
+        case OperationPoint::BALANCED: return compressZSTD(preprocessed, 12);
+        case OperationPoint::MAXIMUM: return compressZSTD(preprocessed, 15);  // LZMA too slow
     }
     return preprocessed;
 }
@@ -76,13 +76,16 @@ std::vector<uint8_t> Compressor::compressLZMA(const std::vector<uint8_t>& data, 
         throw std::runtime_error("LZMA encoder init failed");
     }
 
-    std::vector<uint8_t> compressed(data.size() + 1024);
+    // Allocate buffer with proper bound (LZMA can expand data in worst case)
+    size_t bound = data.size() + (data.size() / 10) + 65536;
+    std::vector<uint8_t> compressed(bound);
     strm.next_in = data.data();
     strm.avail_in = data.size();
     strm.next_out = compressed.data();
     strm.avail_out = compressed.size();
 
-    if (lzma_code(&strm, LZMA_FINISH) != LZMA_STREAM_END) {
+    lzma_ret ret = lzma_code(&strm, LZMA_FINISH);
+    if (ret != LZMA_STREAM_END) {
         lzma_end(&strm);
         throw std::runtime_error("LZMA compression failed");
     }
@@ -129,8 +132,8 @@ std::vector<uint8_t> Compressor::decompressLZMA(const std::vector<uint8_t>& data
 Preprocessor::Strategy Compressor::getPreprocessingStrategy(OperationPoint op_point) {
     switch (op_point) {
         case OperationPoint::FAST: return Preprocessor::Strategy::BYTE_REORDER;
-        case OperationPoint::BALANCED: return Preprocessor::Strategy::DELTA_ENCODING;
-        case OperationPoint::MAXIMUM: return Preprocessor::Strategy::COMBINED;
+        case OperationPoint::BALANCED: return Preprocessor::Strategy::BYTE_REORDER;
+        case OperationPoint::MAXIMUM: return Preprocessor::Strategy::BYTE_REORDER;
     }
     return Preprocessor::Strategy::NONE;
 }

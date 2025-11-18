@@ -28,9 +28,19 @@ std::vector<uint8_t> Preprocessor::deprocess(const std::vector<uint8_t>& data, S
 std::vector<uint8_t> Preprocessor::byteReorder(const std::vector<uint8_t>& data) {
     size_t num_values = data.size() / 2;
     std::vector<uint8_t> reordered(data.size());
+
+    // Two-pass: sequential writes for cache efficiency
+    size_t src_idx = 0;
+    // First pass: copy all high bytes
     for (size_t i = 0; i < num_values; ++i) {
-        reordered[i] = data[i * 2];
-        reordered[num_values + i] = data[i * 2 + 1];
+        reordered[i] = data[src_idx];
+        src_idx += 2;
+    }
+    // Second pass: copy all low bytes
+    src_idx = 1;
+    for (size_t i = 0; i < num_values; ++i) {
+        reordered[num_values + i] = data[src_idx];
+        src_idx += 2;
     }
     return reordered;
 }
@@ -38,18 +48,33 @@ std::vector<uint8_t> Preprocessor::byteReorder(const std::vector<uint8_t>& data)
 std::vector<uint8_t> Preprocessor::byteDeorder(const std::vector<uint8_t>& data) {
     size_t num_values = data.size() / 2;
     std::vector<uint8_t> original(data.size());
+
+    // Two-pass interleaving
+    size_t dst_idx = 0;
+    // First pass: place high bytes
     for (size_t i = 0; i < num_values; ++i) {
-        original[i * 2] = data[i];
-        original[i * 2 + 1] = data[num_values + i];
+        original[dst_idx] = data[i];
+        dst_idx += 2;
+    }
+    // Second pass: place low bytes
+    dst_idx = 1;
+    for (size_t i = 0; i < num_values; ++i) {
+        original[dst_idx] = data[num_values + i];
+        dst_idx += 2;
     }
     return original;
 }
 
 std::vector<uint8_t> Preprocessor::deltaEncode(const std::vector<uint8_t>& data) {
-    if (data.size() < 2) return data;
-    std::vector<uint8_t> encoded(data.size());
-    encoded[0] = data[0];
-    encoded[1] = data[1];
+    // Not used in current implementation - kept for future experimentation
+    if (data.size() < 4) return data;  // Need at least 2 int16 values
+
+    std::vector<uint8_t> encoded;
+    encoded.reserve(data.size());
+
+    // Copy first value unchanged
+    encoded.push_back(data[0]);
+    encoded.push_back(data[1]);
 
     size_t num_values = data.size() / 2;
     for (size_t i = 1; i < num_values; ++i) {
@@ -57,16 +82,25 @@ std::vector<uint8_t> Preprocessor::deltaEncode(const std::vector<uint8_t>& data)
         memcpy(&prev, &data[(i - 1) * 2], 2);
         memcpy(&curr, &data[i * 2], 2);
         int16_t delta = curr - prev;
-        memcpy(&encoded[i * 2], &delta, 2);
+
+        uint8_t delta_bytes[2];
+        memcpy(delta_bytes, &delta, 2);
+        encoded.push_back(delta_bytes[0]);
+        encoded.push_back(delta_bytes[1]);
     }
     return encoded;
 }
 
 std::vector<uint8_t> Preprocessor::deltaDecode(const std::vector<uint8_t>& data) {
-    if (data.size() < 2) return data;
-    std::vector<uint8_t> decoded(data.size());
-    decoded[0] = data[0];
-    decoded[1] = data[1];
+    // Not used in current implementation - kept for future experimentation
+    if (data.size() < 4) return data;  // Need at least 2 int16 values
+
+    std::vector<uint8_t> decoded;
+    decoded.reserve(data.size());
+
+    // First value is unchanged
+    decoded.push_back(data[0]);
+    decoded.push_back(data[1]);
 
     size_t num_values = data.size() / 2;
     for (size_t i = 1; i < num_values; ++i) {
@@ -74,7 +108,11 @@ std::vector<uint8_t> Preprocessor::deltaDecode(const std::vector<uint8_t>& data)
         memcpy(&prev, &decoded[(i - 1) * 2], 2);
         memcpy(&delta, &data[i * 2], 2);
         int16_t curr = prev + delta;
-        memcpy(&decoded[i * 2], &curr, 2);
+
+        uint8_t curr_bytes[2];
+        memcpy(curr_bytes, &curr, 2);
+        decoded.push_back(curr_bytes[0]);
+        decoded.push_back(curr_bytes[1]);
     }
     return decoded;
 }
@@ -149,11 +187,24 @@ std::vector<uint8_t> Preprocessor::combinedDeprocess(const std::vector<uint8_t>&
 double Preprocessor::calculateEntropy(const std::vector<uint8_t>& data) {
     if (data.empty()) return 0.0;
 
+    // Sample-based entropy calculation for large datasets
+    const size_t MAX_SAMPLES = 10000000; // 10MB sample
+    const size_t sample_size = std::min(data.size(), MAX_SAMPLES);
+    const size_t stride = data.size() / sample_size;
+
     std::map<uint8_t, size_t> freq;
-    for (uint8_t byte : data) freq[byte]++;
+    if (stride <= 1) {
+        // Small dataset, use all data
+        for (size_t i = 0; i < sample_size; ++i) freq[data[i]]++;
+    } else {
+        // Large dataset, use uniform sampling
+        for (size_t i = 0; i < data.size(); i += stride) {
+            freq[data[i]]++;
+        }
+    }
 
     double entropy = 0.0;
-    double size = static_cast<double>(data.size());
+    double size = static_cast<double>(freq.size() > 0 ? sample_size : data.size());
     for (const auto& pair : freq) {
         double prob = static_cast<double>(pair.second) / size;
         entropy -= prob * std::log2(prob);

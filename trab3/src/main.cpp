@@ -9,25 +9,24 @@
 void printUsage(const char* prog) {
     std::cout << "SafeTensors Compressor - Information and Coding Lab 3\n\n";
     std::cout << "Usage:\n";
-    std::cout << "  " << prog << " compress <input.safetensors> <output.stcmp> [fast|balanced|maximum]\n";
+    std::cout << "  " << prog << " compress <input.safetensors> <output.stcmp>\n";
     std::cout << "  " << prog << " decompress <input.stcmp> <output.safetensors>\n";
     std::cout << "  " << prog << " benchmark <input.safetensors>\n\n";
-    std::cout << "Modes:\n";
-    std::cout << "  fast     - Byte reorder + ZSTD-10 (~1.4x, <30s)\n";
-    std::cout << "  balanced - Delta + ZSTD-15 (~2.0x, ~60s) [default]\n";
-    std::cout << "  maximum  - Combined + LZMA-9 (~2.3x, >120s)\n";
+    std::cout << "Compression:\n";
+    std::cout << "  Algorithm: Byte reordering + ZSTD level 10\n";
+    std::cout << "  Expected:  ~1.44x ratio in ~27 seconds (943 MB model)\n";
 }
 
 int compress(const std::string& input, const std::string& output, const std::string& mode_str) {
-    Compressor::OperationPoint mode = Compressor::OperationPoint::BALANCED;
-    if (mode_str == "fast") mode = Compressor::OperationPoint::FAST;
-    else if (mode_str == "maximum") mode = Compressor::OperationPoint::MAXIMUM;
+    // Single optimized mode - ignore mode parameter for simplicity
+    (void)mode_str;  // Suppress unused parameter warning
+    Compressor::OperationPoint mode = Compressor::OperationPoint::FAST;
 
     SafetensorsParser parser;
     if (!parser.parse(input)) return 1;
 
     Compressor compressor;
-    std::cout << "\nCompressing (" << Compressor::getOperationPointName(mode) << ")..." << std::endl;
+    std::cout << "\nCompressing..." << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<uint8_t> compressed = compressor.compress(parser.getTensorData(), mode);
@@ -55,7 +54,7 @@ int decompress(const std::string& input, const std::string& output) {
 
     if (!compressor.readCompressedFile(input, header, compressed, mode)) return 1;
 
-    std::cout << "\nDecompressing (" << Compressor::getOperationPointName(mode) << ")..." << std::endl;
+    std::cout << "\nDecompressing..." << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<uint8_t> tensor_data = compressor.decompress(compressed, mode);
@@ -100,7 +99,7 @@ int main(int argc, char* argv[]) {
     std::string cmd = argv[1];
 
     if (cmd == "compress" && argc >= 4) {
-        std::string mode = (argc >= 5) ? argv[4] : "balanced";
+        std::string mode = (argc >= 5) ? argv[4] : "";
         return compress(argv[2], argv[3], mode);
     } else if (cmd == "decompress" && argc >= 4) {
         return decompress(argv[2], argv[3]);
