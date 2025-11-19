@@ -9,6 +9,7 @@
 class Benchmarker {
 public:
     struct BenchmarkResult {
+        std::string algorithm;
         std::string operation_point;
         std::string preprocessing;
         size_t original_size;
@@ -20,6 +21,7 @@ public:
         double deprocess_time;
         double total_compress_time;
         double total_decompress_time;
+        double throughput_mb_per_sec;
         double original_entropy;
         double preprocessed_entropy;
         double entropy_reduction;
@@ -30,10 +32,17 @@ public:
     Benchmarker() = default;
     ~Benchmarker() = default;
 
-    BenchmarkResult runBenchmark(const std::vector<uint8_t>& data, Compressor::OperationPoint op_point);
+    BenchmarkResult runBenchmark(const std::vector<uint8_t>& data, 
+                                 Compressor::Algorithm algo,
+                                 Compressor::OperationPoint op_point);
+    
     std::vector<BenchmarkResult> runAllBenchmarks(const std::vector<uint8_t>& data);
+    
+    std::vector<BenchmarkResult> runAlgorithmComparison(const std::vector<uint8_t>& data,
+                                                        Compressor::OperationPoint op_point);
 
     void printResults(const std::vector<BenchmarkResult>& results);
+    void printComparisonTable(const std::vector<BenchmarkResult>& results);
     bool saveResultsJSON(const std::vector<BenchmarkResult>& results, const std::string& filepath);
     bool saveResultsCSV(const std::vector<BenchmarkResult>& results, const std::string& filepath);
 
@@ -53,6 +62,8 @@ private:
     };
 
     double getPeakMemoryUsageMB();
+    bool verifyDecompression(const std::vector<uint8_t>& original, 
+                            const std::vector<uint8_t>& decompressed);
 };
 
 #endif
