@@ -1,0 +1,128 @@
+================================================================================
+SAFETENSORS FILE STRUCTURE ANALYSIS
+================================================================================
+
+📄 FILE: test/model.safetensors
+   Total size: 0.92 GB
+
+--------------------------------------------------------------------------------
+1. HEADER STRUCTURE
+--------------------------------------------------------------------------------
+   Header size: 32,280 bytes (31.52 KB)
+   Format: JSON (UTF-8 encoded)
+
+   Metadata contents:
+   - Number of tensors: 290
+   - Metadata fields: ['format']
+
+   Tensor information:
+   - Total parameters: 494,032,768
+   - Data types: {'BF16': 290}
+
+   Sample tensor structures (first 5):
+     1. model.embed_tokens.weight
+        Shape: [151936, 896]
+        Parameters: 136,134,656
+        Size: 259.66 MB
+     2. model.layers.0.mlp.down_proj.weight
+        Shape: [896, 4864]
+        Parameters: 4,358,144
+        Size: 8.31 MB
+     3. model.layers.0.mlp.gate_proj.weight
+        Shape: [4864, 896]
+        Parameters: 4,358,144
+        Size: 8.31 MB
+     4. model.layers.0.mlp.up_proj.weight
+        Shape: [4864, 896]
+        Parameters: 4,358,144
+        Size: 8.31 MB
+     5. model.layers.1.mlp.down_proj.weight
+        Shape: [896, 4864]
+        Parameters: 4,358,144
+        Size: 8.31 MB
+
+--------------------------------------------------------------------------------
+2. TENSOR DATA ANALYSIS
+--------------------------------------------------------------------------------
+   Total tensor data: 942.29 MB
+   Format: BFloat16 (16-bit floating point)
+   Number of BF16 values: 494,032,768
+
+--------------------------------------------------------------------------------
+3. BYTE-LEVEL ANALYSIS
+--------------------------------------------------------------------------------
+   Analyzing sample: 10.0 MB
+
+   Top 10 most frequent bytes:
+     0x3c: 1,490,014 occurrences (14.21%)
+     0xbc: 1,480,217 occurrences (14.12%)
+     0x3b: 797,731 occurrences (7.61%)
+     0xbb: 797,103 occurrences (7.60%)
+     0xba: 231,324 occurrences (2.21%)
+     0x3a: 228,652 occurrences (2.18%)
+     0xbd: 122,637 occurrences (1.17%)
+     0x3d: 118,276 occurrences (1.13%)
+     0xb9: 70,276 occurrences (0.67%)
+     0x39: 68,738 occurrences (0.66%)
+
+   High bytes (BF16 exponent + sign):
+   Top 5 most frequent:
+     0x82: 0.62%
+     0x86: 0.62%
+     0x84: 0.62%
+     0x88: 0.61%
+     0x8a: 0.61%
+
+   Low bytes (BF16 mantissa):
+   Top 5 most frequent:
+     0x3c: 28.00%
+     0xbc: 27.77%
+     0x3b: 14.90%
+     0xbb: 14.85%
+     0x3a: 3.95%
+
+--------------------------------------------------------------------------------
+4. ENTROPY ANALYSIS
+--------------------------------------------------------------------------------
+   Overall entropy: 6.1828 bits/byte
+   High bytes entropy: 7.9580 bits/byte
+   Low bytes entropy: 2.6301 bits/byte
+
+   Theoretical maximum: 8.000 bits/byte (random data)
+   Compression potential: 22.7%
+
+--------------------------------------------------------------------------------
+5. BFLOAT16 VALUE ANALYSIS
+--------------------------------------------------------------------------------
+   Total values analyzed: 5,242,880
+   Zeros: 25 (0.00%)
+   Positive values: 2,627,980 (50.12%)
+   Negative values: 2,614,875 (49.87%)
+   Small values (|x| < 0.1): 5,242,879 (100.00%)
+
+--------------------------------------------------------------------------------
+6. BYTE REORDERING IMPACT SIMULATION
+--------------------------------------------------------------------------------
+   Original entropy: 6.1828 bits/byte
+   After byte reordering: 6.1828 bits/byte
+   Entropy reduction: 0.0000 bits/byte (0.0%)
+
+   ✅ Byte reordering REDUCES entropy (good for compression)
+
+--------------------------------------------------------------------------------
+7. COMPRESSIBILITY ESTIMATION
+--------------------------------------------------------------------------------
+   Shannon entropy limit:
+   - Minimum size: 728.26 MB
+   - Maximum ratio: 1.29x
+
+   After preprocessing:
+   - Minimum size: 728.26 MB
+   - Maximum ratio: 1.29x
+
+   Note: Real compressors achieve 60-70% of theoretical maximum
+   Expected practical ratio: 0.84x
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================

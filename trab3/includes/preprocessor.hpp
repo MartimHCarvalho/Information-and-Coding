@@ -12,7 +12,9 @@ public:
         BYTE_REORDER,
         DELTA_ENCODING,
         BF16_TO_FP16,
-        COMBINED
+        COMBINED,
+        BYTE_REORDER_DELTA,      // Byte reorder + delta encoding
+        BIT_PLANE_SEPARATION      // Separate by bit significance
     };
 
     Preprocessor() = default;
@@ -33,6 +35,12 @@ private:
     std::vector<uint8_t> fp16ToBf16(const std::vector<uint8_t>& data);
     std::vector<uint8_t> combinedPreprocess(const std::vector<uint8_t>& data);
     std::vector<uint8_t> combinedDeprocess(const std::vector<uint8_t>& data);
+
+    // New advanced strategies
+    std::vector<uint8_t> byteReorderDelta(const std::vector<uint8_t>& data);
+    std::vector<uint8_t> byteReorderDeltaInverse(const std::vector<uint8_t>& data);
+    std::vector<uint8_t> bitPlaneSeparation(const std::vector<uint8_t>& data);
+    std::vector<uint8_t> bitPlaneReconstruction(const std::vector<uint8_t>& data);
 };
 
 #endif
