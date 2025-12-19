@@ -21,12 +21,12 @@ void printUsage(const char* prog) {
     std::cout << "  lzma     - LZMA/XZ (highest ratio, slowest)\n\n";
     std::cout << "Modes:\n";
     std::cout << "  fast     - Quick compression\n";
-    std::cout << "  balanced - Balance speed/ratio [default]\n";
-    std::cout << "  maximum  - Maximum compression\n\n";
+    std::cout << "  maximum  - Maximum compression [default]\n\n";
     std::cout << "Examples:\n";
-    std::cout << "  " << prog << " compress model.safetensors model.stcmp zstd balanced\n";
+    std::cout << "  " << prog << " compress model.safetensors model.stcmp zstd maximum\n";
+    std::cout << "  " << prog << " compress model.safetensors model.stcmp zstd fast\n";
     std::cout << "  " << prog << " benchmark model.safetensors\n";
-    std::cout << "  " << prog << " compare model.safetensors balanced\n";
+    std::cout << "  " << prog << " compare model.safetensors fast\n";
 }
 
 Compressor::Algorithm parseAlgorithm(const std::string& algo_str) {
@@ -47,7 +47,7 @@ Compressor::Algorithm parseAlgorithm(const std::string& algo_str) {
 Compressor::OperationPoint parseMode(const std::string& mode_str) {
     if (mode_str == "fast") return Compressor::OperationPoint::FAST;
     if (mode_str == "maximum") return Compressor::OperationPoint::MAXIMUM;
-    return Compressor::OperationPoint::BALANCED; // Default
+    return Compressor::OperationPoint::MAXIMUM; // Default
 }
 
 int compress(const std::string& input, const std::string& output, 

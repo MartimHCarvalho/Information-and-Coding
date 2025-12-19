@@ -138,8 +138,8 @@ clean-all:
 
 # Quick integrity test
 test: build
-	@echo "=== Running Quick Compression Test (ZSTD) ==="
-	@./bin/compressor compress test/model.safetensors output/test.stcmp zstd balanced
+	@echo "=== Running Quick Compression Test (ZSTD Fast) ==="
+	@./bin/compressor compress test/model.safetensors output/test.stcmp zstd fast
 	@echo ""
 	@echo "=== Testing Decompression ==="
 	@./bin/compressor decompress output/test.stcmp output/restored.safetensors
@@ -159,7 +159,7 @@ test-all: build
 	@echo "=== Testing All Algorithms ==="
 	@echo ""
 	@for algo in lz4 deflate zstd lzma; do \
-		for mode in fast balanced maximum; do \
+		for mode in fast maximum; do \
 			echo "Testing $$algo ($$mode)..."; \
 			./bin/compressor compress test/model.safetensors output/test_$$algo\_$$mode.stcmp $$algo $$mode || exit 1; \
 			./bin/compressor decompress output/test_$$algo\_$$mode.stcmp output/restored_$$algo\_$$mode.safetensors || exit 1; \
@@ -259,8 +259,8 @@ help:
 	@echo ""
 	@echo "QUANT    - Quantization mode:"
 	@echo "           none - No quantization, lossless (default)"
-	@echo "           4    - INT4 quantization (351 MB, ~98%% quality)"
-	@echo "           8    - INT8 quantization (530 MB, ~99%% quality)"
+	@echo "           4    - INT4 quantization (350 MB, ~98%% quality)"
+	@echo "           8    - INT8 quantization (529 MB, ~99%% quality)"
 	@echo ""
 	@echo "ALGO     - Compression algorithm (default: zstd)"
 	@echo "           lz4     - Ultra-fast, lower ratio"
@@ -270,7 +270,6 @@ help:
 	@echo ""
 	@echo "MODE     - Compression mode (default: maximum)"
 	@echo "           fast    - Fastest compression"
-	@echo "           balanced- Good speed/ratio trade-off"
 	@echo "           maximum - Best compression ratio"
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════════════════"
@@ -310,11 +309,12 @@ help:
 	@echo "  make compare-all  - Compare lossless, INT8, INT4 compression"
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════════════════"
-	@echo "EXPECTED RESULTS (Qwen2-0.5B, 943 MB model)"
+	@echo "EXPECTED RESULTS (Qwen2-0.5B, 943 MB model, 16-core CPU)"
 	@echo "───────────────────────────────────────────────────────────────────────"
-	@echo "  Lossless ZSTD:    641 MB (1.47×) - Perfect quality"
-	@echo "  INT8 + ZSTD:      530 MB (1.78×) - ~99%% quality"
-	@echo "  INT4 + ZSTD:      351 MB (2.69×) - ~98%% quality"
+	@echo "  Lossless ZSTD:    633 MB (1.49×, 104s) - Perfect quality"
+	@echo "  INT8 + ZSTD:      529 MB (1.78×, 79s) - ~99%% quality"
+	@echo "  INT4 + ZSTD:      350 MB (2.69×, 70s) - ~98%% quality"
+	@echo "  Decompression:    Up to 503 MB/s"
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════════════════"
 	@echo ""

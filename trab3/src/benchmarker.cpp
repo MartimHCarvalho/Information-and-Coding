@@ -77,7 +77,6 @@ std::vector<Benchmarker::BenchmarkResult> Benchmarker::runAllBenchmarks(const st
     
     std::vector<Compressor::OperationPoint> op_points = {
         Compressor::OperationPoint::FAST,
-        Compressor::OperationPoint::BALANCED,
         Compressor::OperationPoint::MAXIMUM
     };
     

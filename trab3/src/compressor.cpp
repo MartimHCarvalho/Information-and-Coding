@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstring>
+#include <thread>
 
 std::vector<uint8_t> Compressor::compress(const std::vector<uint8_t>& data, 
                                            Algorithm algo,
@@ -50,12 +51,32 @@ std::vector<uint8_t> Compressor::decompress(const std::vector<uint8_t>& compress
     return preprocessor_.deprocess(decompressed, strategy);
 }
 
-// ZSTD Implementation
+// ZSTD Implementation with Multithreading
 std::vector<uint8_t> Compressor::compressZSTD(const std::vector<uint8_t>& data, int level) {
+    // Create compression context
+    ZSTD_CCtx* cctx = ZSTD_createCCtx();
+    if (!cctx) {
+        throw std::runtime_error("ZSTD: failed to create compression context");
+    }
+
+    // Set compression level
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, level);
+
+    // Enable multithreading - use all available CPU cores
+    unsigned int num_threads = std::thread::hardware_concurrency();
+    if (num_threads == 0) num_threads = 4; // Fallback to 4 threads
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_nbWorkers, num_threads);
+
+    // Allocate output buffer
     size_t bound = ZSTD_compressBound(data.size());
     std::vector<uint8_t> compressed(bound);
 
-    size_t size = ZSTD_compress(compressed.data(), bound, data.data(), data.size(), level);
+    // Compress with context
+    size_t size = ZSTD_compress2(cctx, compressed.data(), bound, data.data(), data.size());
+
+    // Clean up
+    ZSTD_freeCCtx(cctx);
+
     if (ZSTD_isError(size)) {
         throw std::runtime_error("ZSTD compression failed: " + std::string(ZSTD_getErrorName(size)));
     }
@@ -65,13 +86,24 @@ std::vector<uint8_t> Compressor::compressZSTD(const std::vector<uint8_t>& data, 
 }
 
 std::vector<uint8_t> Compressor::decompressZSTD(const std::vector<uint8_t>& data) {
+    // Get decompressed size
     unsigned long long size = ZSTD_getFrameContentSize(data.data(), data.size());
     if (size == ZSTD_CONTENTSIZE_ERROR || size == ZSTD_CONTENTSIZE_UNKNOWN) {
         throw std::runtime_error("ZSTD: cannot determine decompressed size");
     }
 
+    // Create decompression context (more efficient for large files)
+    ZSTD_DCtx* dctx = ZSTD_createDCtx();
+    if (!dctx) {
+        throw std::runtime_error("ZSTD: failed to create decompression context");
+    }
+
     std::vector<uint8_t> decompressed(size);
-    size_t result = ZSTD_decompress(decompressed.data(), size, data.data(), data.size());
+    size_t result = ZSTD_decompressDCtx(dctx, decompressed.data(), size, data.data(), data.size());
+
+    // Clean up
+    ZSTD_freeDCtx(dctx);
+
     if (ZSTD_isError(result)) {
         throw std::runtime_error("ZSTD decompression failed: " + std::string(ZSTD_getErrorName(result)));
     }
@@ -282,36 +314,32 @@ int Compressor::getCompressionLevel(Algorithm algo, OperationPoint op_point) {
         case Algorithm::ZSTD:
             switch (op_point) {
                 case OperationPoint::FAST: return 3;
-                case OperationPoint::BALANCED: return 10;
                 case OperationPoint::MAXIMUM: return 19;
             }
             break;
-            
+
         case Algorithm::LZ4:
             switch (op_point) {
                 case OperationPoint::FAST: return 0;  // Fast mode
-                case OperationPoint::BALANCED: return 6;
                 case OperationPoint::MAXIMUM: return 12;
             }
             break;
-            
+
         case Algorithm::DEFLATE:
             switch (op_point) {
                 case OperationPoint::FAST: return 3;
-                case OperationPoint::BALANCED: return 6;
                 case OperationPoint::MAXIMUM: return 9;
             }
             break;
-            
+
         case Algorithm::LZMA:
             switch (op_point) {
                 case OperationPoint::FAST: return 3;
-                case OperationPoint::BALANCED: return 6;
                 case OperationPoint::MAXIMUM: return 9;
             }
             break;
     }
-    return 6; // Default
+    return 9; // Default to maximum
 }
 
 std::string Compressor::getAlgorithmName(Algorithm algo) {
@@ -327,7 +355,6 @@ std::string Compressor::getAlgorithmName(Algorithm algo) {
 std::string Compressor::getOperationPointName(OperationPoint op_point) {
     switch (op_point) {
         case OperationPoint::FAST: return "Fast";
-        case OperationPoint::BALANCED: return "Balanced";
         case OperationPoint::MAXIMUM: return "Maximum";
     }
     return "Unknown";

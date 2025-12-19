@@ -3,12 +3,12 @@
 ## Executive Summary
 
 **Technique:** Block-wise INT4 quantization (with INT8 option)
-**Input:** 942 MB BFloat16 model (Qwen2-0.5B)
-**After INT4 quantization:** ~262 MB packed INT4 (3.6× reduction)
-**After ZSTD compression:** ~280-300 MB (3.1-3.4× total reduction)
+**Input:** 943 MB BFloat16 model (Qwen2-0.5B)
+**After INT4 quantization:** ~701 MB packed INT4 (1.34× reduction)
+**After ZSTD compression:** ~350 MB (2.69× total reduction, 70s on 16-core CPU)
 **Accuracy:** Minimal degradation (~1-2% perplexity increase)
 
-**Alternative (INT8):** ~530 MB after ZSTD compression (1.78× total reduction)
+**Alternative (INT8):** ~529 MB after ZSTD compression (1.78× total reduction, 79s on 16-core CPU)
 
 **Key Innovations:**
 - Per-block scale factors prevent outliers from dominating quantization range
@@ -21,15 +21,15 @@
 
 ### The Lossless Compression Limit
 
-Our lossless approach (byte reordering + ZSTD) achieves:
+Our lossless approach (byte reordering + multithreaded ZSTD) achieves:
 ```
-942 MB → 640 MB (1.47× compression ratio)
+943 MB → 633 MB (1.49× compression ratio, 104s on 16-core CPU)
 ```
 
 **Problem:** Shannon entropy limits prevent further lossless compression:
 - Measured entropy: 6.18 bits/byte
 - Theoretical minimum: ~615 MB
-- We're already at 96% of theoretical optimum
+- We're already at 97% of theoretical optimum
 
 **Conclusion:** To reach ~500 MB or below requires lossy compression (quantization).
 
@@ -75,8 +75,8 @@ Instead of quantizing the entire model with one scale factor, we divide weights 
 | **Range** | -8 to 7 | -128 to 127 |
 | **Precision** | 16 levels | 256 levels |
 | **Base compression** | 4× (vs BF16) | 2× (vs BF16) |
-| **After ZSTD** | ~280-300 MB | ~530 MB |
-| **Total compression** | 3.1-3.4× | 1.78× |
+| **After ZSTD** | ~350 MB (70s) | ~529 MB (79s) |
+| **Total compression** | 2.69× | 1.78× |
 | **Accuracy loss** | ~1-2% perplexity | <1% perplexity |
 | **Storage** | Packed (2 values/byte) | Direct (1 value/byte) |
 

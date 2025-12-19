@@ -17,7 +17,6 @@ public:
 
     enum class OperationPoint {
         FAST,
-        BALANCED,
         MAXIMUM
     };
 
