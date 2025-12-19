@@ -53,14 +53,14 @@ make build
 
 ### Compress (Fast Mode)
 ```bash
-./bin/compressor compress model.safetensors output.stcmp zstd fast
+./bin/compressor compress test/model.safetensors output.stcmp zstd fast
 ```
 
 ### Compress (Maximum Mode - Default)
 ```bash
-./bin/compressor compress model.safetensors output.stcmp zstd maximum
+./bin/compressor compress test/model.safetensors output.stcmp zstd maximum
 # or simply
-./bin/compressor compress model.safetensors output.stcmp
+./bin/compressor compress test/model.safetensors output.stcmp
 ```
 
 ### Decompress
@@ -73,88 +73,29 @@ make build
 ## Performance Comparison
 
 **Test Model:** Qwen2-0.5B (943 MB, 494M parameters)
-**Hardware:** 16-core CPU with multithreaded ZSTD compression
 
 ### Fast Mode (Optimized for Speed)
 
 | Tool | Size (MB) | Ratio | Time | Speed | Best For |
 |------|-----------|-------|------|-------|----------|
-| **This Tool (ZSTD-Fast MT)** | **669 MB** | **1.41×** | **5.5s** | **172 MB/s** | **Recommended** |
-| LZ4-Fast | 792 MB | 1.19× | 4.1s | 230 MB/s | Ultra-fast |
-| zstd -3 (single-thread) | 682 MB | 1.38× | 7.3s | 129 MB/s | Standard fast |
-| gzip -1 | 685 MB | 1.38× | 23s | 41 MB/s | Legacy |
+| **Custom ZSTD (Fast)** | **669 MB** | **1.41×** | **5.5s** | **172 MB/s** | **Recommended** |
+| LZ4 | 792 MB | 1.19× | 4.1s | 230 MB/s | Ultra-fast |
+| zstd  | 682 MB | 1.38× | 7.3s | 129 MB/s | Standard fast |
+| DEFLATE | 685 MB | 1.38× | 23s | 41 MB/s | Legacy |
 
 ### Maximum Mode (Optimized for Compression)
 
 | Tool | Size (MB) | Ratio | Time | Speed | Decompression |
 |------|-----------|-------|------|-------|---------------|
-| **This Tool (ZSTD-Max MT)** | **633 MB** | **1.49×** | **104s** | **9.0 MB/s** | **503 MB/s** |
-| zstd -19 (single-thread) | 654 MB | 1.44× | 520s | 1.8 MB/s | - |
-| xz -9 (LZMA) | 651 MB | 1.45× | 961s | 1.0 MB/s | - |
-| gzip -9 | 674 MB | 1.40× | 146s | 6.4 MB/s | - |
+| **Custom ZSTD (Maximum)** | **633 MB** | **1.49×** | **104s** | **9.0 MB/s** | **503 MB/s** |
+| zstd  | 654 MB | 1.44× | 520s | 1.8 MB/s | - |
+| LZMA | 651 MB | 1.45× | 961s | 1.0 MB/s | - |
+| DEFLATE | 674 MB | 1.40× | 146s | 6.4 MB/s | - |
 
 **Key Advantages:**
 - **Domain-specific preprocessing:** 5-10% better compression than generic tools
 - **Multithreading:** 2-5× faster than single-threaded compression
 - **Fast decompression:** Up to 503 MB/s throughput
-
----
-
-## Quantization: Breaking the Lossless Barrier
-
-For applications where minimal quality loss (~1-2%) is acceptable, block-wise quantization provides dramatically better compression:
-
-### Quantization Results
-
-**Test Model:** Qwen2-0.5B (943 MB, 494M parameters)
-**Hardware:** 16-core CPU with multithreaded ZSTD
-
-| Approach | Final Size | Ratio | Quality | Reduction | Time |
-|----------|-----------|-------|---------|-----------|------|
-| **Lossless (ZSTD-Max MT)** | **633 MB** | **1.49×** | **Perfect** | **33%** | **104s** |
-| **INT8 + ZSTD-Max MT** | **529 MB** | **1.78×** | **~99%** | **44%** | **79s** |
-| **INT4 + ZSTD-Max MT** | **350 MB** | **2.69×** | **~98%** | **63%** | **70s** |
-
-### How Quantization Works
-
-```
-Original (BFloat16):  943 MB
-        ↓
-Block-wise INT4 Quantization:  701 MB (4 bits per weight, packed)
-        ↓
-ZSTD Multithreaded Compression:  350 MB
-```
-
-**Block-wise Quantization:**
-- Divide weights into blocks of 128
-- Each block gets its own scale factor
-- Prevents outliers from destroying precision
-- INT4: 16 quantization levels (-8 to 7)
-- INT8: 256 quantization levels (-128 to 127)
-
-### Quantization Usage
-
-```bash
-# Install Python dependencies
-pip install safetensors numpy torch
-
-# INT4 quantization (recommended - best compression)
-python scripts/quantize_blockwise.py test/model.safetensors test/model_int4.safetensors
-./bin/compressor compress test/model_int4.safetensors output/model_int4.stcmp zstd maximum
-# Result: 350 MB (2.69× compression, 70s on 16-core CPU)
-
-# INT8 quantization (better accuracy)
-python scripts/quantize_blockwise.py test/model.safetensors test/model_int8.safetensors --bits 8
-./bin/compressor compress test/model_int8.safetensors output/model_int8.stcmp zstd maximum
-# Result: 529 MB (1.78× compression, 79s on 16-core CPU)
-```
-
-**When to Use:**
-- **Lossless:** Research, benchmarking, perfect accuracy required
-- **INT8:** Production with minimal quality loss (<1%)
-- **INT4:** Edge deployment, maximum compression (~1-2% quality loss)
-
-**Documentation:** See [docs/BLOCKWISE_QUANTIZATION.md](docs/BLOCKWISE_QUANTIZATION.md) for detailed technical explanation.
 
 ---
 
@@ -181,45 +122,213 @@ Input: [BF16 data] → Byte Reordering → Compress → Output
 
 ---
 
-## Usage
+## Quantization: Breaking the Lossless Barrier
 
-### Basic Compression
+For applications where minimal quality loss (~1-2%) is acceptable, block-wise quantization provides dramatically better compression.
 
-```bash
-# Fast mode (recommended for speed)
-./bin/compressor compress input.safetensors output.stcmp zstd fast
 
-# Maximum mode (best compression ratio, default)
-./bin/compressor compress input.safetensors output.stcmp zstd maximum
+### Quantization Results
+
+**Test Model:** Qwen2-0.5B (943 MB, 494M parameters)
+
+| Approach | Final Size | Ratio | Quality | Reduction | Time |
+|----------|-----------|-------|---------|-----------|------|
+| **Lossless (ZSTD-Maximum)** | **633 MB** | **1.49×** | **Perfect** | **33%** | **104s** |
+| **INT8 + ZSTD-Maximum** | **529 MB** | **1.78×** | **~99%** | **44%** | **79s** |
+| **INT4 + ZSTD-Maximum** | **350 MB** | **2.69×** | **~98%** | **63%** | **70s** |
+
+### How Quantization Works
+
+```
+Original (BFloat16):  943 MB
+        ↓
+Block-wise INT4 Quantization:  701 MB (4 bits per weight, packed)
+        ↓
+ZSTD Multithreaded Compression:  350 MB
 ```
 
-### Algorithm Selection
+**Block-wise Quantization:**
+- Divide weights into blocks of 128
+- Each block gets its own scale factor
+- Prevents outliers from destroying precision
+- INT4: 16 quantization levels (-8 to 7)
+- INT8: 256 quantization levels (-128 to 127)
+
+## Usage
+
+The files to be compressed must be in SafeTensors format and in the **test/** directory.
+
+This tool supports two compression approaches:
+- **Lossless Compression (1-step):** Perfect reconstruction using ZSTD, LZ4, DEFLATE, or LZMA
+- **Lossy Compression (2-step):** INT4/INT8 quantization followed by ZSTD compression
+
+**⚠️ IMPORTANT:** Quantization is a **2-step process**:
+1. **Step 1 - Quantization:** Convert weights from BFloat16/Float32 to INT4/INT8 (Python script)
+2. **Step 2 - Compression:** Compress the quantized file with ZSTD (C++ binary)
+
+---
+
+### Method 1: Using Makefile (EASIEST - Recommended)
+
+The Makefile automatically handles all compression workflows:
+
+```bash
+# ONE-TIME SETUP (install Python dependencies for quantization)
+make setup-python
+
+# ═══════════════════════════════════════════════════
+# LOSSLESS COMPRESSION (1-step, no quantization)
+# ═══════════════════════════════════════════════════
+
+# ZSTD Fast mode (Best speed)
+make compress FILE=test/model.safetensors OUTPUT=output/zstd_fast.stcmp ALGO=zstd MODE=fast
+# Result: 943 MB → 669 MB (1.41×, 5.5s)
+
+# ZSTD Maximum mode (Best compression ratio)
+make compress FILE=test/model.safetensors OUTPUT=output/zstd_max.stcmp ALGO=zstd MODE=maximum
+# Result: 943 MB → 633 MB (1.49×, 104s)
+
+# LZ4 (ultra-fast)
+make compress FILE=test/model.safetensors OUTPUT=output/lz4.stcmp ALGO=lz4 MODE=fast
+# Result: 943 MB → 792 MB (1.19×, 4.1s)
+
+# DEFLATE (gzip-compatible)
+make compress FILE=test/model.safetensors OUTPUT=output/deflate.stcmp ALGO=deflate MODE=maximum
+# Result: 943 MB → 674 MB (1.40×, 146s)
+
+# LZMA (maximum compression)
+make compress FILE=test/model.safetensors OUTPUT=output/lzma.stcmp ALGO=lzma MODE=maximum
+# Result: 943 MB → 651 MB (1.45×, 961s)
+
+# ═══════════════════════════════════════════════════
+# LOSSY COMPRESSION (2-step: quantization + compression)
+# ═══════════════════════════════════════════════════
+
+# INT4 quantization + ZSTD compression (automatic 2-step)
+make compress FILE=test/model.safetensors OUTPUT=output/int4.stcmp QUANT=4
+# Step 1: 943 MB → 701 MB (quantization)
+# Step 2: 701 MB → 350 MB (ZSTD compression)
+# Result: 350 MB total (2.69×, 70s, ~98% quality)
+
+# INT8 quantization + ZSTD compression (automatic 2-step)
+make compress FILE=test/model.safetensors OUTPUT=output/int8.stcmp QUANT=8
+# Step 1: 943 MB → 872 MB (quantization)
+# Step 2: 872 MB → 529 MB (ZSTD compression)
+# Result: 529 MB total (1.78×, 79s, ~99% quality)
+
+# ═══════════════════════════════════════════════════
+# DECOMPRESSION (works for all methods)
+# ═══════════════════════════════════════════════════
+make decompress INPUT=output/zstd_max.stcmp RESTORED=output/restored.safetensors
+
+# Verify integrity (lossless methods only)
+cmp test/model.safetensors output/restored.safetensors && echo "Perfect match!"
+```
+
+---
+
+### Method 2: Manual Step-by-Step (Using Binaries Directly)
+
+For fine-grained control or understanding the process:
+
+```bash
+# ONE-TIME SETUP: Create Python virtual environment (for quantization)
+make setup-python
+# Or manually:
+# python3 -m venv venv
+# sourve venv/bin/activate
+# pip install safetensors numpy torch
+
+make build
+
+# ═══════════════════════════════════════════════════
+# LOSSLESS COMPRESSION (1-step, all algorithms)
+# ═══════════════════════════════════════════════════
+
+# ZSTD - Fast mode
+./bin/compressor compress test/model.safetensors output/zstd_fast.stcmp zstd fast
+# Result: 943 MB → 669 MB (1.41×, 5.5s, 172 MB/s)
+
+# ZSTD - Maximum mode (best balance)
+./bin/compressor compress test/model.safetensors output/zstd_max.stcmp zstd maximum
+# Result: 943 MB → 633 MB (1.49×, 104s, decompression: 503 MB/s)
+
+# LZ4 - Fast mode (ultra-fast)
+./bin/compressor compress test/model.safetensors output/lz4_fast.stcmp lz4 fast
+# Result: 943 MB → 792 MB (1.19×, 4.1s, 230 MB/s)
+
+# LZ4 - Maximum mode (high compression)
+./bin/compressor compress test/model.safetensors output/lz4_max.stcmp lz4 maximum
+# Result: Higher compression than fast, slower
+
+# DEFLATE - Fast mode (gzip-compatible)
+./bin/compressor compress test/model.safetensors output/deflate_fast.stcmp deflate fast
+# Result: 943 MB → 685 MB (1.38×, 23s)
+
+# DEFLATE - Maximum mode
+./bin/compressor compress test/model.safetensors output/deflate_max.stcmp deflate maximum
+# Result: 943 MB → 674 MB (1.40×, 146s)
+
+# LZMA - Maximum mode (slowest, high ratio)
+./bin/compressor compress test/model.safetensors output/lzma_max.stcmp lzma maximum
+# Result: 943 MB → 651 MB (1.45×, 961s)
+
+# Default: ZSTD Maximum (if algorithm/mode omitted)
+./bin/compressor compress test/model.safetensors output/default.stcmp
+
+# ═══════════════════════════════════════════════════
+# LOSSY COMPRESSION (2-step: quantization + ZSTD)
+# ═══════════════════════════════════════════════════
+
+# INT4 COMPRESSION (2-step process)
+# Step 1: Quantize the model (BFloat16 → INT4)
+venv/bin/python scripts/quantize_blockwise.py test/model.safetensors output/model_int4.safetensors --bits 4
+# Output: 701 MB (INT4 quantized model)
+
+# Step 2: Compress the quantized model (INT4 → ZSTD)
+./bin/compressor compress output/model_int4.safetensors output/final_int4.stcmp zstd maximum
+# Output: 350 MB (final compressed file)
+
+# INT8 COMPRESSION (2-step process)
+# Step 1: Quantize the model (BFloat16 → INT8)
+venv/bin/python scripts/quantize_blockwise.py test/model.safetensors output/model_int8.safetensors --bits 8
+# Output: 872 MB (INT8 quantized model)
+
+# Step 2: Compress the quantized model (INT8 → ZSTD)
+./bin/compressor compress output/model_int8.safetensors output/final_int8.stcmp zstd maximum
+# Output: 529 MB (final compressed file)
+
+# ═══════════════════════════════════════════════════
+# DECOMPRESSION (auto-detects algorithm from header)
+# ═══════════════════════════════════════════════════
+./bin/compressor decompress output/zstd_max.stcmp output/restored.safetensors
+./bin/compressor decompress output/final_int4.stcmp output/restored_int4.safetensors
+
+# Verify integrity (lossless only - should be perfect match)
+cmp test/model.safetensors output/restored.safetensors && echo "Perfect match!"
+```
+
+---
+
+### Algorithm Selection Guide
 
 All algorithms support two operation modes: **fast** and **maximum**
 
-```bash
-# Ultra-fast with LZ4
-./bin/compressor compress input.safetensors output.stcmp lz4 fast
+| Algorithm | Fast Mode | Maximum Mode | Characteristics |
+|-----------|-----------|--------------|-----------------|
+| **ZSTD** | Level 3 | Level 19 | **RECOMMENDED** - Best balance, multithreaded |
+| **LZ4** | Level 0 | Level 12 (HC) | Ultra-fast, lower compression ratio |
+| **DEFLATE** | Level 3 | Level 9 | Standard gzip, widely compatible |
+| **LZMA** | Level 3 | Level 9 | Maximum ratio, very slow |
 
-# Maximum compression with ZSTD (recommended)
-./bin/compressor compress input.safetensors output.stcmp zstd maximum
-
-# LZMA for archival (very slow, maximum ratio)
-./bin/compressor compress input.safetensors output.stcmp lzma maximum
-
-# Default mode is maximum
-./bin/compressor compress input.safetensors output.stcmp zstd
-```
-
-### Decompression
-
-```bash
-# Auto-detects algorithm from file header
-./bin/compressor decompress output.stcmp restored.safetensors
-
-# Verify integrity
-cmp input.safetensors restored.safetensors && echo "Perfect match!"
-```
+**When to Use:**
+- **ZSTD Maximum:** Best overall choice - excellent ratio (1.49×) with fast decompression (503 MB/s)
+- **ZSTD Fast:** Speed-critical workflows - 172 MB/s compression, 5.5s total
+- **LZ4 Fast:** Ultra-fast compression needed - 230 MB/s, lowest ratio (1.19×)
+- **DEFLATE:** Compatibility with standard gzip tools required
+- **LZMA:** Archival storage where compression time doesn't matter
+- **INT4 + ZSTD:** Edge deployment, maximum compression (2.69×, ~98% quality)
+- **INT8 + ZSTD:** Production with minimal quality loss (1.78×, ~99% quality)
 
 ### Benchmarking
 
@@ -278,30 +387,6 @@ Understanding why different algorithms perform differently on BFloat16 neural ne
 
 **Key Insight:** ZSTD's FSE algorithm is specifically designed for data with skewed byte distributions. Analysis reveals that 28.33% of bytes are concentrated in just two values (0x3c and 0xbc), which FSE exploits effectively.
 
----
-
-## Project Structure
-
-```
-trab3/
-├── src/                    # C++ source code
-│   ├── main.cpp           # CLI interface
-│   ├── compressor.cpp     # Compression algorithms
-│   ├── preprocessor.cpp   # Byte reordering logic
-│   ├── safetensors_parser.cpp
-│   └── benchmarker.cpp
-├── scripts/               # Python quantization scripts
-│   └── quantize_blockwise.py  # INT4/INT8 quantization
-├── docs/                  # Documentation
-│   ├── BLOCKWISE_QUANTIZATION.md  # Quantization technical guide
-│   ├── REPORT_ANALYSIS.md         # Byte distribution analysis
-│   └── ZSTD_OPTIMIZATIONS.md      # ZSTD tuning details
-├── includes/              # Headers
-├── test/
-│   └── model.safetensors  # Test model (~943 MB, gitignored)
-├── Makefile              # Build system
-└── README.md             # This file
-```
 
 ---
 

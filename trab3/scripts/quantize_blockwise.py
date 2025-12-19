@@ -302,14 +302,14 @@ def quantize_model(input_path, output_path, block_size=128, bits=4, verbose=True
 def print_statistics(stats, bits=4):
     """Print quantization statistics in a nice format."""
     print("\n" + "="*70)
-    print("QUANTIZATION STATISTICS")
+    print(f"QUANTIZATION COMPLETE (INT{bits})")
     print("="*70)
     print(f"Total tensors:           {stats['total_tensors']}")
-    print(f"  Quantized (INT{bits}):      {stats['quantized_tensors']}")
+    print(f"  Quantized to INT{bits}:       {stats['quantized_tensors']}")
     print(f"  Kept original:         {stats['kept_original']}")
     print()
-    print(f"Original size:           {stats['original_size_mb']:.2f} MB")
-    print(f"Quantized weights:       {stats['quantized_size_mb']:.2f} MB")
+    print(f"Original size:           {stats['original_size_mb']:.2f} MB (BFloat16/Float32)")
+    print(f"Quantized weights:       {stats['quantized_size_mb']:.2f} MB (INT{bits} packed)")
     print(f"Scale factors:           {stats['scales_size_mb']:.2f} MB")
     print(f"Total quantized size:    {stats['total_size_mb']:.2f} MB")
     print()
@@ -317,8 +317,14 @@ def print_statistics(stats, bits=4):
     print(f"Size reduction:          {stats['size_reduction_percent']:.1f}%")
     print("="*70)
     print()
-    print("Next step: Compress with ZSTD")
-    print("  ./bin/compressor compress <output_file> <compressed_file> zstd maximum")
+    print("⚠️  THIS IS STEP 1 OF 2!")
+    print()
+    print("Next: Compress the quantized file with ZSTD (Step 2/2)")
+    print(f"  ./bin/compressor compress <quantized_file> <output.stcmp> zstd maximum")
+    print()
+    expected_final = 350 if bits == 4 else 529
+    print(f"Expected final result after ZSTD compression:")
+    print(f"  ~{expected_final} MB (INT{bits} + ZSTD)")
     print()
 
 
@@ -340,12 +346,21 @@ Examples:
   # Quiet mode
   python scripts/quantize_blockwise.py input.safetensors output.safetensors --quiet
 
-After quantization, compress with ZSTD:
-  ./bin/compressor compress test/model_int4.safetensors output/model_int4.stcmp zstd maximum
+⚠️  IMPORTANT: This is a 2-step process!
+  Step 1: Run this script to quantize (BFloat16 → INT4/INT8)
+  Step 2: Compress the quantized file with ZSTD
 
-Expected results:
-  INT4: ~280-300 MB (from original 942 MB, 3.1-3.4× compression)
-  INT8: ~330-350 MB (from original 942 MB, 2.7-2.9× compression)
+After quantization (Step 1), compress with ZSTD (Step 2):
+  ./bin/compressor compress <quantized_file> output.stcmp zstd maximum
+
+Expected results (Qwen2-0.5B, 943 MB model):
+  Step 1 (Quantization):
+    INT4: 943 MB → ~701 MB (INT4 quantized model)
+    INT8: 943 MB → ~872 MB (INT8 quantized model)
+
+  Step 2 (After ZSTD compression):
+    INT4 + ZSTD: ~350 MB final (2.69× total compression)
+    INT8 + ZSTD: ~529 MB final (1.78× total compression)
         """
     )
 

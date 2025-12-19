@@ -316,6 +316,10 @@ std::vector<uint8_t> Preprocessor::byteReorderDeltaInverse(const std::vector<uin
  *
  * Note: Output size may be larger than input due to byte alignment of bit planes
  */
+// Suppress false positive warnings from GCC 13 on small vector copies
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 std::vector<uint8_t> Preprocessor::bitPlaneSeparation(const std::vector<uint8_t>& data) {
     if (data.size() < 2) return data;
 
@@ -345,10 +349,14 @@ std::vector<uint8_t> Preprocessor::bitPlaneSeparation(const std::vector<uint8_t>
 
     return separated;  // Keep full size, don't trim
 }
+#pragma GCC diagnostic pop
 
 /**
  * BIT_PLANE_SEPARATION Inverse: Reconstructs data from bit planes
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 std::vector<uint8_t> Preprocessor::bitPlaneReconstruction(const std::vector<uint8_t>& data) {
     if (data.size() < 2) return data;
 
@@ -388,3 +396,4 @@ std::vector<uint8_t> Preprocessor::bitPlaneReconstruction(const std::vector<uint
 
     return reconstructed;
 }
+#pragma GCC diagnostic pop

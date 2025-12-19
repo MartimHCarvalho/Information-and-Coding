@@ -35,44 +35,67 @@ compress: build
 		echo "Error: Input file '$(FILE)' not found!"; \
 		exit 1; \
 	fi
-	@echo "=== Compressing $(FILE) ==="
-	@echo "Algorithm: $(ALGO)"
-	@echo "Mode: $(MODE)"
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "SAFETENSORS COMPRESSION"
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "Input:        $(FILE)"
+	@echo "Output:       $(OUTPUT)"
+	@echo "Algorithm:    $(ALGO)"
+	@echo "Mode:         $(MODE)"
 	@echo "Quantization: $(QUANT)"
+	@echo "═══════════════════════════════════════════════════════════════"
 	@echo ""
 	@mkdir -p output /tmp/safetensors_tmp
 	@# Check if quantization is requested
 	@if [ "$(QUANT)" = "4" ] || [ "$(QUANT)" = "8" ]; then \
-		echo "→ Step 1/2: Quantizing to INT$(QUANT)..."; \
+		echo "🔹 2-STEP PROCESS: Quantization + Compression"; \
+		echo ""; \
+		echo "━━━ Step 1/2: Quantizing to INT$(QUANT) ━━━"; \
+		echo ""; \
 		$(MAKE) setup-python > /dev/null 2>&1; \
 		$(PYTHON) scripts/quantize_blockwise.py "$(FILE)" /tmp/safetensors_tmp/quantized_int$(QUANT).safetensors --bits $(QUANT); \
+		echo "━━━ Step 2/2: Compressing with $(ALGO) ($(MODE)) ━━━"; \
 		echo ""; \
-		echo "→ Step 2/2: Compressing with $(ALGO) ($(MODE))..."; \
 		./bin/compressor compress /tmp/safetensors_tmp/quantized_int$(QUANT).safetensors "$(OUTPUT)" $(ALGO) $(MODE); \
 	else \
-		echo "→ Compressing directly (no quantization)..."; \
+		echo "🔹 1-STEP PROCESS: Lossless Compression (no quantization)"; \
+		echo ""; \
 		./bin/compressor compress "$(FILE)" "$(OUTPUT)" $(ALGO) $(MODE); \
 	fi
 	@echo ""
-	@echo "✓ Done! Output: $(OUTPUT)"
-	@ls -lh "$(OUTPUT)" | awk '{print "  Size: " $$5}'
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "✓ COMPRESSION COMPLETE"
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "Output file: $(OUTPUT)"
+	@ls -lh "$(OUTPUT)" | awk '{print "Final size:  " $$5}'
 	@rm -rf /tmp/safetensors_tmp
+	@echo "═══════════════════════════════════════════════════════════════"
 	@echo ""
 
 # Decompress a file
 # Usage:
-#   make decompress INPUT=compressed.stcmp OUTPUT=restored.safetensors
+#   make decompress INPUT=compressed.stcmp RESTORED=restored.safetensors
 decompress: build
 	@if [ ! -f "$(INPUT)" ]; then \
 		echo "Error: Input file '$(INPUT)' not found!"; \
 		exit 1; \
 	fi
-	@echo "=== Decompressing $(INPUT) ==="
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "SAFETENSORS DECOMPRESSION"
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "Input:  $(INPUT)"
+	@echo "Output: $(RESTORED)"
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo ""
 	@mkdir -p output
 	@./bin/compressor decompress "$(INPUT)" "$(RESTORED)"
 	@echo ""
-	@echo "✓ Done! Output: $(RESTORED)"
-	@ls -lh "$(RESTORED)" | awk '{print "  Size: " $$5}'
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "✓ DECOMPRESSION COMPLETE"
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "Output file: $(RESTORED)"
+	@ls -lh "$(RESTORED)" | awk '{print "Final size:  " $$5}'
+	@echo "═══════════════════════════════════════════════════════════════"
 	@echo ""
 
 # ============================================================================
