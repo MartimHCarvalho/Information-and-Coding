@@ -86,3 +86,7 @@ test_output/
 # Documentation
 docs/*.pdf
 !docs/README.md
+
+# Virtual Environments
+venv/
+env/
