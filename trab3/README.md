@@ -51,22 +51,20 @@ make build
 
 ## Quick Start
 
-### Compress (Fast Mode)
-```bash
-./bin/compressor compress test/model.safetensors output.stcmp zstd fast
-```
+Get started in 30 seconds:
 
-### Compress (Maximum Mode - Default)
 ```bash
-./bin/compressor compress test/model.safetensors output.stcmp zstd maximum
-# or simply
+# Build the compressor
+make build
+
+# Compress a model (ZSTD Maximum - best ratio)
 ./bin/compressor compress test/model.safetensors output.stcmp
-```
 
-### Decompress
-```bash
+# Decompress
 ./bin/compressor decompress output.stcmp restored.safetensors
 ```
+
+**→ See the [Usage](#usage) section for all algorithms, modes, and quantization options.**
 
 ---
 
