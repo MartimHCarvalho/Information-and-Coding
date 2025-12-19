@@ -128,11 +128,12 @@ def analyze_safetensors(filepath):
         print("3. BYTE-LEVEL ANALYSIS")
         print("-" * 80)
 
-        # Sample first 10 MB for analysis (faster)
-        sample_size = min(10 * 1024 * 1024, len(tensor_data))
+        # Analyze full file (set to 10 MB for faster analysis if needed)
+        # sample_size = min(10 * 1024 * 1024, len(tensor_data))  # Fast mode
+        sample_size = len(tensor_data)  # Full analysis
         sample_data = tensor_data[:sample_size]
 
-        print(f"   Analyzing sample: {sample_size / (1024**2):.1f} MB")
+        print(f"Analyzing {'FULL FILE' if sample_size == len(tensor_data) else 'sample'}: {sample_size / (1024**2):.1f} MB")
         print()
 
         # Overall byte frequency
