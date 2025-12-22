@@ -47,7 +47,6 @@ public:
 private:
     Preprocessor preprocessor_;
 
-    // Compression implementations
     std::vector<uint8_t> compressZSTD(const std::vector<uint8_t>& data, int level);
     std::vector<uint8_t> decompressZSTD(const std::vector<uint8_t>& data);
     
