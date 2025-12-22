@@ -285,7 +285,7 @@ Expected results (Qwen2-0.5B, 943 MB model):
 
         if not args.quiet:
             print_statistics(stats, bits=args.bits)
-            print(f"✓ Success! Quantized model saved to: {output_path}")
+            print(f"Quantized model saved to: {output_path}")
 
     except Exception as e:
         print(f"Error during quantization: {e}")
